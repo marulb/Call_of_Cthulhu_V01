@@ -1,0 +1,2 @@
+# Additional requirements beyond fastapi_01 base image
+# Add project-specific packages here
