@@ -13,6 +13,10 @@ from app.routes_realms import router as realms_router
 from app.routes_campaigns import router as campaigns_router
 from app.routes_characters import router as characters_router
 from app.routes_sessions import router as sessions_router
+from app.routes_chapters import router as chapters_router
+from app.routes_scenes import router as scenes_router
+from app.routes_turns import router as turns_router
+from app.routes_action_drafts import router as action_drafts_router
 
 
 @asynccontextmanager
@@ -48,6 +52,10 @@ app.include_router(realms_router, prefix="/api/v1")
 app.include_router(campaigns_router, prefix="/api/v1")
 app.include_router(characters_router, prefix="/api/v1")
 app.include_router(sessions_router, prefix="/api/v1")
+app.include_router(chapters_router, prefix="/api/v1")
+app.include_router(scenes_router, prefix="/api/v1")
+app.include_router(turns_router, prefix="/api/v1")
+app.include_router(action_drafts_router, prefix="/api/v1")
 
 
 @app.get("/")

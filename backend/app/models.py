@@ -150,6 +150,90 @@ class StoryLinks(BaseModel):
     active_scene_index: Optional[int] = None
 
 
+class Chapter(BaseModel):
+    """Chapter entity - AI-managed narrative arc within campaign."""
+    id: Optional[str] = None
+    kind: EntityKind = EntityKind.CHAPTER
+    campaign_id: str
+    name: str
+    description: Optional[str] = None
+    summary: Optional[str] = None  # AI-generated summary
+    scenes: List[str] = Field(default_factory=list)  # Scene IDs
+    status: str = "active"  # active, completed
+    meta: Meta
+    changes: List[Change] = Field(default_factory=list)
+
+    class Config:
+        use_enum_values = True
+
+
+class Scene(BaseModel):
+    """Scene entity - AI-managed story segment within chapter."""
+    id: Optional[str] = None
+    kind: EntityKind = EntityKind.SCENE
+    chapter_id: str
+    name: str
+    description: Optional[str] = None
+    summary: Optional[str] = None  # AI-generated summary
+    turns: List[str] = Field(default_factory=list)  # Turn IDs
+    status: str = "active"  # active, completed
+    meta: Meta
+    changes: List[Change] = Field(default_factory=list)
+
+    class Config:
+        use_enum_values = True
+
+
+class Action(BaseModel):
+    """Individual action within a turn."""
+    actor_id: str  # Character ID
+    controller_owner: str  # Player ID
+    speak: Optional[str] = None
+    act: Optional[str] = None
+    appearance: Optional[str] = None
+    emotion: Optional[str] = None
+    ooc: Optional[str] = None  # Out-of-character notes
+    meta: Dict[str, Any] = Field(default_factory=dict)  # ready, resolved flags
+
+
+class Reaction(BaseModel):
+    """Keeper's response to turn actions."""
+    description: str  # Scene narrative from Keeper AI
+    summary: Optional[str] = None  # AI-generated summary for context
+
+
+class Turn(BaseModel):
+    """Turn entity - player actions + Keeper response."""
+    id: Optional[str] = None
+    kind: EntityKind = EntityKind.TURN
+    scene_id: str
+    order: int  # Turn number in scene
+    actions: List[Action] = Field(default_factory=list)
+    reaction: Optional[Reaction] = None  # Keeper's narrative response
+    status: str = "draft"  # draft, ready_for_agents, processing, completed
+    meta: Meta
+    changes: List[Change] = Field(default_factory=list)
+
+    class Config:
+        use_enum_values = True
+
+
+class ActionDraft(BaseModel):
+    """Temporary action draft for UI state (cleared after turn submission)."""
+    id: Optional[str] = None
+    session_id: str
+    player_id: str
+    character_id: str
+    speak: Optional[str] = None
+    act: Optional[str] = None
+    appearance: Optional[str] = None
+    emotion: Optional[str] = None
+    ooc: Optional[str] = None
+    order: int = 0
+    ready: bool = False
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class Session(BaseModel):
     """Session entity - real-world play instance."""
     id: Optional[str] = None
@@ -157,6 +241,7 @@ class Session(BaseModel):
     realm_id: str
     campaign_id: str
     session_number: int
+    master_player_id: Optional[str] = None  # Player ID of current master
     attendance: Attendance
     story_links: Optional[StoryLinks] = None
     notes: Optional[str] = None
@@ -209,7 +294,46 @@ class SessionCreate(BaseModel):
     realm_id: str
     campaign_id: str
     session_number: int
+    master_player_id: Optional[str] = None
     players_present: List[str]
     players_absent: List[str] = Field(default_factory=list)
     notes: Optional[str] = None
     created_by: str
+
+
+class ChapterCreate(BaseModel):
+    """Request model for creating a chapter (AI-managed)."""
+    campaign_id: str
+    name: str
+    description: Optional[str] = None
+    created_by: str = "KeeperAI"
+
+
+class SceneCreate(BaseModel):
+    """Request model for creating a scene (AI-managed)."""
+    chapter_id: str
+    name: str
+    description: Optional[str] = None
+    created_by: str = "KeeperAI"
+
+
+class TurnCreate(BaseModel):
+    """Request model for creating a turn."""
+    scene_id: str
+    order: int
+    actions: List[Action] = Field(default_factory=list)
+    created_by: str
+
+
+class ActionDraftCreate(BaseModel):
+    """Request model for creating/updating action draft."""
+    session_id: str
+    player_id: str
+    character_id: str
+    speak: Optional[str] = None
+    act: Optional[str] = None
+    appearance: Optional[str] = None
+    emotion: Optional[str] = None
+    ooc: Optional[str] = None
+    order: int = 0
+    ready: bool = False
