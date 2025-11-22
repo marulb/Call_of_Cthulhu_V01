@@ -18,8 +18,8 @@ services:
     ports:
       - "8093:8000"
     environment:
-      - MONGODB_SYSTEM_URL=mongodb://martin_usr:CorzBRxa8Xz3iAv90VmH@mongodb:27017/call_of_cthulhu_system?authSource=admin
-      - MONGODB_URL=mongodb://martin_usr:CorzBRxa8Xz3iAv90VmH@mongodb:27017/call_of_cthulhu_gamerecords?authSource=admin
+      - MONGODB_SYSTEM_URL=mongodb://mongodb:27017/call_of_cthulhu_system
+      - MONGODB_URL=mongodb://mongodb:27017/call_of_cthulhu_gamerecords
       - QDRANT_URL=http://qdrant:6333
       - OLLAMA_URL=http://host.docker.internal:11434
     depends_on:
@@ -49,9 +49,7 @@ services:
 
   mongodb:
     image: mongo:latest
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=martin_usr
-      - MONGO_INITDB_ROOT_PASSWORD=CorzBRxa8Xz3iAv90VmH
+    command: mongod --noauth
     volumes:
       - ./database/mongodb:/data/db
     ports:
