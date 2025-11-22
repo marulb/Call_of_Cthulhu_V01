@@ -17,6 +17,7 @@ from app.routes_chapters import router as chapters_router
 from app.routes_scenes import router as scenes_router
 from app.routes_turns import router as turns_router
 from app.routes_action_drafts import router as action_drafts_router
+from app.routes_ai import router as ai_router
 
 
 @asynccontextmanager
@@ -56,6 +57,7 @@ app.include_router(chapters_router, prefix="/api/v1")
 app.include_router(scenes_router, prefix="/api/v1")
 app.include_router(turns_router, prefix="/api/v1")
 app.include_router(action_drafts_router, prefix="/api/v1")
+app.include_router(ai_router, prefix="/api/v1")
 
 
 @app.get("/")
@@ -72,3 +74,11 @@ async def root():
 async def health():
     """Health check endpoint."""
     return {"status": "healthy"}
+
+
+# ============== Socket.IO Integration ==============
+
+from app.socketio_manager import get_socketio_app
+
+# Wrap FastAPI app with Socket.IO
+socket_app = get_socketio_app(app)

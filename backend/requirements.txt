@@ -1,2 +1,4 @@
 # Additional requirements beyond fastapi_01 base image
 # Add project-specific packages here
+python-socketio==5.11.0
+aiohttp==3.9.1
