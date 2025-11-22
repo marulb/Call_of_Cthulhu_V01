@@ -86,7 +86,7 @@
             ready: draft.ready,
             'is-mine': draft.player_id === currentPlayerId
           }"
-          draggable="canReorderDrafts && draft.player_id === currentPlayerId"
+          :draggable="canReorderDrafts && draft.player_id === currentPlayerId"
           @dragstart="handleDragStart(index)"
           @dragover.prevent
           @drop="handleDrop(index)"
@@ -271,6 +271,10 @@ function handleDrop(dropIndex: number) {
 
   const newOrder = [...sortedDrafts.value]
   const [draggedItem] = newOrder.splice(draggedIndex.value, 1)
+  if (!draggedItem) {
+    draggedIndex.value = null
+    return
+  }
   newOrder.splice(dropIndex, 0, draggedItem)
 
   emit('reorderDrafts', newOrder.map((d) => d.id))

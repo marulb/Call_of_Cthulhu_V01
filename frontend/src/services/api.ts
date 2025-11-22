@@ -78,6 +78,7 @@ export interface Session {
   realm_id: string
   campaign_id: string
   session_number: number
+  master_player_id?: string
   attendance: {
     players_present: string[]
     players_absent: string[]

@@ -11,6 +11,7 @@ export const useGameSessionStore = defineStore('gameSession', () => {
 
   // Player information
   const playerName = ref<string>('')
+  const playerId = ref<string>('')
 
   // Selected entities
   const selectedWorld = ref<World | null>(null)
@@ -46,6 +47,10 @@ export const useGameSessionStore = defineStore('gameSession', () => {
     if (playerName.value) {
       localStorage.setItem('coc_player_name', playerName.value)
     }
+  }
+
+  function setPlayerId(id: string) {
+    playerId.value = id
   }
 
   function loadPlayerNameFromStorage() {
@@ -153,6 +158,7 @@ export const useGameSessionStore = defineStore('gameSession', () => {
   return {
     // State
     playerName,
+    playerId,
     selectedWorld,
     selectedRealm,
     selectedCampaign,
@@ -176,6 +182,7 @@ export const useGameSessionStore = defineStore('gameSession', () => {
 
     // Actions
     setPlayerName,
+    setPlayerId,
     loadPlayerNameFromStorage,
     setWorld,
     setRealm,

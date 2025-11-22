@@ -100,8 +100,9 @@ async function handleLogin() {
 
   try {
     // Register or get existing player
-    await playersAPI.createOrGet({ name: playerName.value })
+    const player = await playersAPI.createOrGet({ name: playerName.value })
     sessionStore.setPlayerName(playerName.value)
+    sessionStore.setPlayerId(player.id)
     router.push({ name: 'select-world' })
   } catch (err: any) {
     error.value = err.message || 'Failed to login'
