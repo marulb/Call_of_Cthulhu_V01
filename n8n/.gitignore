@@ -1,0 +1,15 @@
+# n8n runtime files
+database.sqlite
+database.sqlite-shm
+database.sqlite-wal
+*.log
+crash.journal
+
+# n8n data directories
+binaryData/
+git/
+nodes/
+ssh/
+
+# Config (may contain sensitive data)
+config

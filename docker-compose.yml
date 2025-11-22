@@ -8,7 +8,7 @@ services:
     depends_on:
       - backend
     networks:
-      - coc-network
+      - coc01_network
 
   backend:
     image: fastapi_01:latest
@@ -18,14 +18,15 @@ services:
     ports:
       - "8093:8000"
     environment:
-      - MONGODB_URL=mongodb://mongodb:27017/coc_db
+      - MONGODB_SYSTEM_URL=mongodb://martin_usr:CorzBRxa8Xz3iAv90VmH@mongodb:27017/call_of_cthulhu_system?authSource=admin
+      - MONGODB_URL=mongodb://martin_usr:CorzBRxa8Xz3iAv90VmH@mongodb:27017/call_of_cthulhu_gamerecords?authSource=admin
       - QDRANT_URL=http://qdrant:6333
       - OLLAMA_URL=http://host.docker.internal:11434
     depends_on:
       - mongodb
       - qdrant
     networks:
-      - coc-network
+      - coc01_network
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -35,34 +36,37 @@ services:
       - "5693:5678"
     environment:
       - DB_TYPE=mongodb
-      - DB_MONGODB_CONNECTION_URL=mongodb://n8n-mongodb:27017/n8n
+      - DB_MONGODB_CONNECTION_URL=mongodb://n8n_mongodb:27017/n8n
       - N8N_HOST=0.0.0.0
       - WEBHOOK_URL=http://localhost:5678/
       - OLLAMA_HOST=http://host.docker.internal:11434
     volumes:
       - ./n8n:/home/node/.n8n
     depends_on:
-      - n8n-mongodb
+      - n8n_mongodb
     networks:
-      - coc-network
+      - coc01_network
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  n8n-mongodb:
+  n8n_mongodb:
     image: mongo:latest
     volumes:
       - ./database/n8n-mongodb:/data/db
     networks:
-      - coc-network
+      - coc01_network
 
   mongodb:
     image: mongo:latest
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=martin_usr
+      - MONGO_INITDB_ROOT_PASSWORD=CorzBRxa8Xz3iAv90VmH
     volumes:
       - ./database/mongodb:/data/db
     ports:
       - "27093:27017"
     networks:
-      - coc-network
+      - coc01_network
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -71,8 +75,8 @@ services:
     ports:
       - "6393:6333"
     networks:
-      - coc-network
+      - coc01_network
 
 networks:
-  coc-network:
+  coc01_network:
     driver: bridge
