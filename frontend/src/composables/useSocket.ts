@@ -16,7 +16,9 @@ export function useSocket() {
       return
     }
 
-    const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:8093'
+    // Socket.io is at root, not /api/v1
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8093/api/v1'
+    const socketUrl = apiUrl.replace('/api/v1', '')
 
     socket.value = io(socketUrl, {
       path: '/socket.io',

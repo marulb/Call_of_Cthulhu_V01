@@ -10,6 +10,8 @@ services:
       - /app/node_modules
     ports:
       - "3093:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8093/api/v1
     depends_on:
       - backend
     networks:
