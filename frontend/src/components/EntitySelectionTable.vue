@@ -126,8 +126,8 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  select: [entity: Entity]
-  toggleSelect: [entity: Entity]
+  select: [entity: any]
+  toggleSelect: [entity: any]
   create: [data: { name: string; description?: string }]
   continue: []
   back: []
