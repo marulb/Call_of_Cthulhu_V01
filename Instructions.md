@@ -1,230 +1,275 @@
-# Call of Cthulhu - Game Management System Implementation
+# Gameplay Interface Specification
 
 ## Overview
-RPG campaign management system with login/selection flow for World → Realm → Campaign → Characters → Session management.
+The gameplay interface is the core session screen where players interact with the Keeper AI, manage their characters' actions, and coordinate with other players. This interface operates within an active **Session**, which references a specific Realm and Campaign.
 
-## Data Architecture
+## Data Model Context
+See `data.md` for complete schema. **Note:** `data.md` is a draft schema and can be adapted based on best-practice considerations during development.
 
-### Two Parallel Layers
+This interface operates on:
 
-**1. In-Game Narrative Layer** (Hierarchical)
 ```
 World (ruleset/lore)
   └─ Realm (player group)
-      ├─ Characters (belong to realm, participate in campaigns)
+      ├─ Players (users in realm)
+      ├─ Characters/NPCs/Objects/Locations (entities in realm)
       └─ Campaign (story arc)
-          └─ Chapter (campaign parts) [DEFERRED]
-              └─ Scene (chapter parts) [DEFERRED]
-                  └─ Turn (smallest unit) [DEFERRED]
+          └─ Chapter [AI-managed]
+              └─ Scene [AI-managed]
+                  └─ Turn (player actions → Keeper response)
 ```
 
-**2. Real-World Session Layer** (Independent)
+**Sessions** are independent entities (not part of narrative hierarchy) that reference:
+- `realm_id`, `campaign_id`
+- `attendance.players_present`, `attendance.players_absent`
+- `story_links.active_chapter_index`, `story_links.active_scene_index`
+
+## Core Components
+
+### 1. Session Info Header
+Display current context (read-only):
+- Campaign name (from `campaigns` collection)
+- Chapter name (from `story_links.chapters[active_chapter_index]`)
+- Scene name (from `story_links.scenes[active_scene_index]`)
+- Turn number (current `turn.order` + 1)
+
+### 2. Players List
+**Purpose:** Show all players in the current session, their characters, ready states, and Master designation.
+
+**Structure:**
 ```
-Session (meeting instance)
-  - References: realm_id, campaign_id
-  - Tracks: attendance, story_links, notes
-  - Not part of narrative hierarchy
+[MASTER] PlayerName
+  ├─ Character1
+  ├─ Character2
+  └─ Character3
 ```
 
-### Database Structure
+Display hierarchy from:
+- **Players:** `realm.players[]` filtered by `session.attendance.players_present[]`
+- **Characters:** `entities` collection where `kind: "pc"` and `controller.owner` matches player ID
+- **Master:** Player matching `session.master_player_id` (field to be added to Session schema)
 
-**Two MongoDB Databases:**
+**Visual Indicators:**
+- **Master Badge:** `[MASTER]` prefix on player name
+- **Local Player:** Faint yellow background (toggles to faint green when ready)
+- **Other Players:** Faint red background (not ready) → Faint green (ready)
+- **Characters:** Inherit parent player's color scheme
+- **Owned Characters:** Yellow background (toggles to green when ready)
 
-1. **`call_of_cthulhu_system`** - AI knowledge base (read-heavy, costly to regenerate)
-   - Collections: `worlds`, `rulesets`, `ai_processed_content`
-   - Mainly used by AI agents for retrieval
+**Ready State Logic:**
+- Each character has individual ready toggle
+- Player-level ready button sets ALL owned characters to ready
+- Players can un-ready themselves/characters at any time
+- Ready states sync in real-time across all clients
 
-2. **`call_of_cthulhu_gamerecords`** - Player-created data (write-heavy)
-   - Collections: `realms`, `campaigns`, `entities`, `sessions`
-   - Used by both players and AI
-   - `entities` collection stores all characters, NPCs, objects, locations (filtered by `kind` field)
+**Master Controls:**
+- First player to join session becomes Master automatically
+- **"Become Master" button** visible to all players (instant transfer, no confirmation needed)
+  - Purpose: Prevent session blocking due to AFK master
+- Only Master can submit the action list to Keeper AI
+- Master can submit even if not all players are ready (warning popup: "Not all players ready. Proceed?")
 
-**Change Tracking:**
-All entities include `changes` array:
+**Late Joiners:**
+- New players joining active session trigger Master notification: "PlayerName wants to join. Accept?"
+- If accepted: 
+  - Add player to `session.attendance.players_present[]`
+  - Player's characters (from `entities` where `controller.owner` matches) added to UI
+  - New players can immediately add actions to current turn
+
+### 3. Realm Chat (Session Chat)
+Player-to-player communication within the current session.
+
+**Features:**
+- Standard chat interface (input field + message history)
+- Foldable/expandable panel
+- Visual alert (flashing) when folded and new message received
+- **Persistence:** Does NOT persist across page refreshes (ephemeral)
+
+**Priority:** Medium (below Action List and Turn History, above Rules Chat)
+
+### 4. Rules Chat (Per-Player)
+Private AI conversation for rules clarification.
+
+**Features:**
+- Each player has individual chat instance (not visible to others)
+- Connects to dedicated Rules AI agent
+- Foldable/expandable panel with alert indicator
+- **Persistence:** Does NOT persist across page refreshes
+
+**Priority:** Lowest
+
+### 5. Turn History Display
+Scrollable chat-style view showing past turns and current turn.
+
+**Format:**
+```
+▼ Turn 2: Actions [foldable/locked]
+  └─ (Submitted action list from Turn 2)
+  
+▼ Turn 2: Scene Description [foldable/locked]
+  └─ (Keeper's narrative response)
+  
+▶ Turn 3: Actions [current/editable]
+  └─ (Active action list - see below)
+```
+
+**Behavior:**
+- Past turns are locked (read-only, copyable)
+- Foldable sections to manage screen space
+- Auto-scroll to current turn on new Keeper response
+- **Persistence:** Full turn history stored in MongoDB
+
+**Priority:** High (primary focus with Action List)
+
+### 6. Action List (Current Turn)
+The core interaction interface where players queue character actions.
+
+#### Action Entry Structure
+Each action entry contains:
+- **Character selector** (dropdown of owned characters from `entities` where `controller.owner` matches local player)
+  - **Fixed after creation:** Character assignment cannot be changed once action is created
+  - To reassign: delete action and create new one with different character
+- **Five optional collapsible text fields:**
+  1. **Speak:** Dialogue
+  2. **Act:** Physical action
+  3. **Appearance:** Observable behavior (shivering, grinning)
+  4. **Emotion:** Inner emotional state (fearful, excited)
+  5. **OOC:** Out-of-character notes/questions to Keeper
+  - Empty fields should be collapsed/hidden by default
+  - Show expand indicator when field has content
+
+These map to the `turn.actions[]` array structure in `data.md`:
 ```json
-"changes": [
-  {"at": "2025-11-22T10:00:00Z", "by": "player-name"}
-]
+{
+  "actor_id": "char-alice-1",           // Character ID (immutable after creation)
+  "controller_owner": "player-alice",   // Player ID
+  "speak": "...",
+  "act": "...",
+  "appearance": "...",
+  "emotion": "...",
+  "ooc": "...",
+  "meta": {
+    "ready": true,
+    "resolved": false
+  }
+}
 ```
 
-## Login & Selection Flow
-
-### User Journey
-1. **Enter Player Name** (real-world player, not character)
-2. **Select/Create World** (ruleset)
-3. **Select/Create Realm** (player group in this world)
-4. **Select/Create Campaign** (story arc in this realm)
-5. **Select Characters** (player's characters in this realm - multi-select)
-6. **Session Choice**: "New Session" or "Continue Previous"
-
-### State Management
-- **Pinia Store**: Active session UI state (current selections, player name)
-- **MongoDB**: Persistent state (character stats, story progress, current scene/turn)
-- **localStorage**: Player name persistence for convenience
-
-### UI Pattern (Consistent Across All Steps)
+**Example:**
 ```
-┌─────────────────────────────────────────┐
-│ Table with Radio/Checkbox Selection     │
-├─────────────────────────────────────────┤
-│ ○ Existing Item 1      [Details ▼]      │
-│ ○ Existing Item 2      [Details ▼]      │
-│ ● Create New           [Form ▼]         │
-└─────────────────────────────────────────┘
+Character: Aldric
+Speak: "I think there might be someone at the door"
+Act: Looking at Beatrice
+Appearance: Questioning look
 ```
 
-- **Single select**: Radio buttons (World, Realm, Campaign, Session)
-- **Multi-select**: Checkboxes (Characters)
-- **Unfold**: Click to expand details or creation form
-- **Consistent layout** across all entity types
+#### Action List Mechanics
+- **Multiple Actions:** Same character can appear multiple times in list
+- **Drag-and-Drop Reordering:** Full flexibility - any action can be moved anywhere
+- **Adding Actions:** 
+  - "Add Action" button beside each owned character in Players List
+  - Alternative: Drag character from Players List into Action List
+- **Removing Actions:** Delete button per action entry
+- **Reactive Updates:** All players see real-time updates to action list
 
-## Implementation Scope
-
-### Phase 1: Core Login Flow (Current)
-✅ **Full CRUD Implementation:**
-- World (name, ruleset, description)
-- Realm (name, world_id, players, description)
-- Campaign (name, realm_id, status, description)
-- Character (name, realm_id, type, controller, description)
-- Session (session_number, realm_id, campaign_id, attendance)
-
-⏸️ **Deferred to Later:**
-- Chapters, Scenes, Turns
-- NPCs, Objects, Locations
-- Full character sheets
-- Authentication/authorization
-
-### Backend API Structure
-
-**Base URL:** `/api/v1/`
-
-**Endpoints:**
+**Conceptual Example:**
 ```
-GET    /worlds                    # List all worlds
-POST   /worlds                    # Create world
-GET    /worlds/{id}               # Get world details
-PUT    /worlds/{id}               # Update world
-DELETE /worlds/{id}               # Delete world
-
-GET    /realms?world_id={id}      # List realms (filtered by world)
-POST   /realms                    # Create realm
-GET    /realms/{id}               # Get realm details
-PUT    /realms/{id}               # Update realm
-DELETE /realms/{id}               # Delete realm
-
-GET    /campaigns?realm_id={id}   # List campaigns (filtered by realm)
-POST   /campaigns                 # Create campaign
-GET    /campaigns/{id}            # Get campaign details
-PUT    /campaigns/{id}            # Update campaign
-DELETE /campaigns/{id}            # Delete campaign
-
-GET    /characters?realm_id={id}&player={name}  # List player's characters
-POST   /characters                # Create character
-GET    /characters/{id}           # Get character details
-PUT    /characters/{id}           # Update character
-DELETE /characters/{id}           # Delete character
-
-GET    /sessions?realm_id={id}&campaign_id={id}  # List sessions
-POST   /sessions                  # Create session
-GET    /sessions/{id}             # Get session details
-GET    /sessions/latest?realm_id={id}&campaign_id={id}  # Get latest session
-PUT    /sessions/{id}             # Update session
-DELETE /sessions/{id}             # Delete session
+1. [Character: Aldric] Speak: "Check the door?" Act: "Looking at Beatrice"
+2. [Character: Beatrice] Act: "Nodding and gesturing at door"
+3. [Character: Aldric] Speak: "Ok, I'll look" Act: "Moving toward door"
+4. [Character: Chen] Act: "Drawing weapon quietly"
 ```
 
-### Frontend Structure
+#### Submission Flow
+1. Players add/edit actions for their characters
+2. Players mark characters/themselves as ready (via `meta.ready` flag)
+3. Master clicks "Submit Turn" button
+4. If not all ready: Warning popup with Proceed/Cancel
+5. Action list submitted to Keeper AI:
+   - Create new `Turn` document with `status: "ready_for_agents"`
+   - Populate `turn.actions[]` with ordered action entries
+   - Add Turn ID to `scene.turns[]` array
+6. Keeper AI processes turn:
+   - Updates `turn.status` to "processing" → "completed"
+   - Populates `turn.reaction.description` (scene narrative)
+   - May mark actions as `resolved: true` or leave some unprocessed
+7. UI updates:
+   - Turn moves to history (locked)
+   - `turn.reaction.description` displays as "Scene Description"
+   - New empty action list for next turn
 
-**Router:**
-```
-/                       → Login (player name entry)
-/select/world           → World selection
-/select/realm           → Realm selection
-/select/campaign        → Campaign selection
-/select/characters      → Character selection
-/select/session         → Session choice (new/continue)
-/game                   → Main game view [FUTURE]
-```
+**Important:** Keeper AI may interrupt action list before all actions complete (unforeseeable story events via `turn.reaction.description`). Actions left with `resolved: false` are dropped - players react to new scene state.
 
-**Pinia Stores:**
+**Persistence:** 
+- Action drafts: Store in temporary collection or session state (restore on refresh)
+- Submitted actions: Permanent in `turns` collection as per `data.md`
+
+## Technical Requirements
+
+### Real-Time Sync (WebSocket)
+- Players List ready states
+- Action List changes (add/remove/reorder)
+- **Action field edits:** Persist on blur (when focus leaves input field)
+  - Debounce: Save to backend when user stops typing for 500ms or moves to different field
+  - Optimistic UI: Show changes immediately, sync in background
+- Chat messages (Realm + Rules)
+- Late joiner notifications
+- Turn submissions and Keeper responses
+- Master transfers
+
+**Reconnection Handling:**
+- On reconnect: Fetch latest `action_drafts` for current session
+- Restore action list state from backend
+- Show notification if other players made changes during disconnect
+
+### MongoDB Collections Structure
+
+**Reference `data.md` for authoritative schema.** Key adaptations needed:
+
+**sessions:** Add field
 ```javascript
-// stores/session.ts
-- playerName: string
-- selectedWorld: World | null
-- selectedRealm: Realm | null
-- selectedCampaign: Campaign | null
-- selectedCharacters: Character[]
-- currentSession: Session | null
+{
+  // ... existing fields from data.md ...
+  master_player_id: String,  // Player ID of current master
+}
 ```
 
-**Components:**
-```
-src/
-├── views/
-│   ├── LoginView.vue           # Player name entry
-│   ├── WorldSelectView.vue     # World selection
-│   ├── RealmSelectView.vue     # Realm selection
-│   ├── CampaignSelectView.vue  # Campaign selection
-│   ├── CharacterSelectView.vue # Character selection (multi)
-│   └── SessionSelectView.vue   # New/Continue session
-├── components/
-│   ├── EntityTable.vue         # Reusable table for all entities
-│   ├── EntityRow.vue           # Expandable row component
-│   └── CreateEntityForm.vue    # Generic creation form
-└── stores/
-    └── session.ts              # Session state management
-```
+**turns:** Already matches requirements in `data.md`
+- `actions[]` array with `actor_id`, `controller_owner`, action fields
+- `reaction.description` for Keeper narrative response
+- `meta.ready` and `meta.resolved` flags per action
 
-## Technical Stack
-
-### Backend
-- **FastAPI** (already installed)
-- **Motor** (async MongoDB driver - already installed)
-- **Pydantic** models for validation
-
-### Frontend
-- **Vue 3** with TypeScript
-- **Vue Router** for navigation
-- **Pinia** for state management
-- **Axios** for API calls
-
-### Available Backend Dependencies
-```python
-# Already in fastapi_01:latest image
-fastapi
-uvicorn
-motor              # MongoDB async driver
-python-multipart
-aiohttp
-diff-match-patch
+**action_drafts:** (New temporary collection for UI state)
+```javascript
+{
+  _id: ObjectId,
+  session_id: String,
+  player_id: String,
+  character_id: String,
+  speak: String,
+  act: String,
+  appearance: String,
+  emotion: String,
+  ooc: String,
+  order: Number,
+  meta: {
+    ready: Boolean
+  },
+  updated_at: Date
+}
 ```
 
-## Development Commands
+Note: Clear `action_drafts` for session after turn submission.
 
-### Git SSH Setup (Manual)
-```bash
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/git_marulb
-# Enter passphrase when prompted
-```
+### UI Layout Priority
+1. **Highest:** Turn History + Current Action List (always visible)
+2. **Medium:** Realm Chat (foldable with alerts)
+3. **Lowest:** Rules Chat (foldable with alerts)
 
-### Git Push
-```bash
-git push -u origin main
-```
-
-### Access Points
-- Frontend: http://localhost:3093
-- Backend API Docs: http://localhost:8093/docs
-- MongoDB: mongodb://localhost:27093
-- Qdrant: http://localhost:6393
-- n8n: http://localhost:5693
-
-## Port Schema
-All services use ports ending in `93` (C1 hex → Call of Cthulhu v1)
-
-## Next Steps (After Phase 1)
-1. Implement Chapter/Scene/Turn management
-2. Add NPC/Object/Location entities
-3. Build game session interface (turn-based gameplay)
-4. Integrate AI agents for narrative generation
-5. Add authentication and user management
+### Future Considerations
+- Scene/Chapter transitions: AI-detected via `turn.reaction` content, not manual UI initially
+- Turn summarization: `turn.agent_result.narrative_summary` feeds into `scene.summary`
+- Scene summarization: Aggregate `scene.summary` feeds into `chapter.summary`
+- Historical context: Keeper AI receives summaries from `campaign.story_arc`, completed chapters/scenes
+- Master settings interface: Player management (kick, permissions) - deferred
+- Character ownership transfer: Allow reassigning `controller.owner` - deferred
