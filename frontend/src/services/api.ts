@@ -7,6 +7,15 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8093
 
 // ============== TYPES ==============
 
+export interface Player {
+  id: string
+  name: string
+  email?: string
+  created_at: string
+  last_login: string
+  realms: string[]
+}
+
 export interface World {
   id: string
   kind: string
@@ -96,6 +105,31 @@ async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
   }
 
   return response.json()
+}
+
+// ============== PLAYERS ==============
+
+export const playersAPI = {
+  list: (search?: string) => {
+    const query = search ? `?search=${encodeURIComponent(search)}` : ''
+    return fetchJSON<Player[]>(`/players${query}`)
+  },
+  get: (id: string) => fetchJSON<Player>(`/players/${id}`),
+  getByName: (name: string) => fetchJSON<Player>(`/players/by-name/${encodeURIComponent(name)}`),
+  createOrGet: (data: { name: string; email?: string }) =>
+    fetchJSON<Player>('/players', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  update: (id: string, data: { name: string; email?: string }) =>
+    fetchJSON<Player>(`/players/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  delete: (id: string) =>
+    fetchJSON<{ message: string }>(`/players/${id}`, {
+      method: 'DELETE'
+    })
 }
 
 // ============== WORLDS ==============

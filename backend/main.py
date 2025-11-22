@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.database import connect_to_mongo, close_mongo_connection
+from app.routes_players import router as players_router
 from app.routes_worlds import router as worlds_router
 from app.routes_realms import router as realms_router
 from app.routes_campaigns import router as campaigns_router
@@ -41,6 +42,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(players_router, prefix="/api/v1")
 app.include_router(worlds_router, prefix="/api/v1")
 app.include_router(realms_router, prefix="/api/v1")
 app.include_router(campaigns_router, prefix="/api/v1")
