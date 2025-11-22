@@ -35,26 +35,17 @@ services:
     ports:
       - "5693:5678"
     environment:
-      - DB_TYPE=mongodb
-      - DB_MONGODB_CONNECTION_URL=mongodb://n8n_mongodb:27017/n8n
+      - DB_TYPE=sqlite
+      - DB_SQLITE_POOL_SIZE=3
       - N8N_HOST=0.0.0.0
       - WEBHOOK_URL=http://localhost:5678/
       - OLLAMA_HOST=http://host.docker.internal:11434
     volumes:
       - ./n8n:/home/node/.n8n
-    depends_on:
-      - n8n_mongodb
     networks:
       - coc01_network
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
-  n8n_mongodb:
-    image: mongo:latest
-    volumes:
-      - ./database/n8n-mongodb:/data/db
-    networks:
-      - coc01_network
 
   mongodb:
     image: mongo:latest
