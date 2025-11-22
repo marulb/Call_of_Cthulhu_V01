@@ -2,9 +2,14 @@ version: '3.8'
 
 services:
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     ports:
-      - "3093:80"
+      - "3093:5173"
     depends_on:
       - backend
     networks:
