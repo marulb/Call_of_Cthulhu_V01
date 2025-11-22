@@ -1,267 +1,230 @@
-# Call of Cthulhu Project Setup
+# Call of Cthulhu - Game Management System Implementation
 
-## Project Structure to Create
+## Overview
+RPG campaign management system with login/selection flow for World → Realm → Campaign → Characters → Session management.
 
+## Data Architecture
+
+### Two Parallel Layers
+
+**1. In-Game Narrative Layer** (Hierarchical)
 ```
-/shared/projects_martin/Call_of_Cthulhu_01/
-├── .gitignore
-├── docker-compose.yml
-├── README.md
-├── Call_of_Cthulhu_01.code-workspace
-├── frontend/
-│   ├── Dockerfile
-│   ├── .gitignore
-│   └── (Vue.js project files - to be created separately)
-├── backend/
-│   ├── main.py
-│   ├── requirements.txt
-│   ├── .gitignore
-│   └── app/
-├── n8n/
-│   └── .gitkeep
-└── database/
-    ├── mongodb/
-    ├── n8n-mongodb/
-    └── qdrant/
+World (ruleset/lore)
+  └─ Realm (player group)
+      ├─ Characters (belong to realm, participate in campaigns)
+      └─ Campaign (story arc)
+          └─ Chapter (campaign parts) [DEFERRED]
+              └─ Scene (chapter parts) [DEFERRED]
+                  └─ Turn (smallest unit) [DEFERRED]
 ```
 
-## Files to Create
-
-### 1. Root .gitignore
-```gitignore
-# Databases
-database/
-
-# Environment
-.env
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
+**2. Real-World Session Layer** (Independent)
+```
+Session (meeting instance)
+  - References: realm_id, campaign_id
+  - Tracks: attendance, story_links, notes
+  - Not part of narrative hierarchy
 ```
 
-### 2. docker-compose.yml
-```yaml
-version: '3.8'
+### Database Structure
 
-services:
-  frontend:
-    build: ./frontend
-    ports:
-      - "3093:80"
-    depends_on:
-      - backend
-    networks:
-      - coc-network
+**Two MongoDB Databases:**
 
-  backend:
-    image: fastapi_01:latest
-    volumes:
-      - ./backend:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    ports:
-      - "8093:8000"
-    environment:
-      - MONGODB_URL=mongodb://mongodb:27017/coc_db
-      - QDRANT_URL=http://qdrant:6333
-      - OLLAMA_URL=http://host.docker.internal:11434
-    depends_on:
-      - mongodb
-      - qdrant
-    networks:
-      - coc-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+1. **`call_of_cthulhu_system`** - AI knowledge base (read-heavy, costly to regenerate)
+   - Collections: `worlds`, `rulesets`, `ai_processed_content`
+   - Mainly used by AI agents for retrieval
 
-  n8n:
-    image: n8nio/n8n:latest
-    ports:
-      - "5693:5678"
-    environment:
-      - DB_TYPE=mongodb
-      - DB_MONGODB_CONNECTION_URL=mongodb://n8n-mongodb:27017/n8n
-      - N8N_HOST=0.0.0.0
-      - WEBHOOK_URL=http://localhost:5678/
-      - OLLAMA_HOST=http://host.docker.internal:11434
-    volumes:
-      - ./n8n:/home/node/.n8n
-    depends_on:
-      - n8n-mongodb
-    networks:
-      - coc-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+2. **`call_of_cthulhu_gamerecords`** - Player-created data (write-heavy)
+   - Collections: `realms`, `campaigns`, `entities`, `sessions`
+   - Used by both players and AI
+   - `entities` collection stores all characters, NPCs, objects, locations (filtered by `kind` field)
 
-  n8n-mongodb:
-    image: mongo:latest
-    volumes:
-      - ./database/n8n-mongodb:/data/db
-    networks:
-      - coc-network
-
-  mongodb:
-    image: mongo:latest
-    volumes:
-      - ./database/mongodb:/data/db
-    ports:
-      - "27093:27017"
-    networks:
-      - coc-network
-
-  qdrant:
-    image: qdrant/qdrant:latest
-    volumes:
-      - ./database/qdrant:/qdrant/storage
-    ports:
-      - "6393:6333"
-    networks:
-      - coc-network
-
-networks:
-  coc-network:
-    driver: bridge
-```
-
-### 3. frontend/Dockerfile
-```dockerfile
-FROM node:18-alpine as build
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm install
-
-COPY . .
-RUN npm run build
-
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-### 4. frontend/.gitignore
-```gitignore
-node_modules/
-dist/
-.env.local
-.env.*.local
-```
-
-### 5. backend/.gitignore
-```gitignore
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-```
-
-### 6. backend/main.py (starter)
-```python
-from fastapi import FastAPI
-
-app = FastAPI(title="Call of Cthulhu API")
-
-@app.get("/")
-async def root():
-    return {"message": "Call of Cthulhu API is running"}
-
-@app.get("/health")
-async def health():
-    return {"status": "healthy"}
-```
-
-### 7. backend/requirements.txt
-```txt
-# Additional requirements beyond fastapi_01 base image
-# Add project-specific packages here
-```
-
-### 8. Call_of_Cthulhu_01.code-workspace
+**Change Tracking:**
+All entities include `changes` array:
 ```json
-{
-  "folders": [
-    {"path": ".", "name": "Root"},
-    {"path": "frontend", "name": "Frontend"},
-    {"path": "backend", "name": "Backend"}
-  ],
-  "settings": {
-    "files.exclude": {
-      "**/__pycache__": true,
-      "**/node_modules": true,
-      "database": true
-    }
-  }
-}
+"changes": [
+  {"at": "2025-11-22T10:00:00Z", "by": "player-name"}
+]
 ```
 
-### 9. README.md
-```markdown
-# Call of Cthulhu Project
+## Login & Selection Flow
 
-RPG campaign management system with Vue.js frontend and FastAPI backend.
+### User Journey
+1. **Enter Player Name** (real-world player, not character)
+2. **Select/Create World** (ruleset)
+3. **Select/Create Realm** (player group in this world)
+4. **Select/Create Campaign** (story arc in this realm)
+5. **Select Characters** (player's characters in this realm - multi-select)
+6. **Session Choice**: "New Session" or "Continue Previous"
 
-## Stack
-- Frontend: Vue.js (port 3093)
-- Backend: FastAPI (port 8093)
-- Databases: MongoDB (27093), Qdrant (6393)
-- Automation: n8n (port 5693)
-- AI: Ollama (host port 11434)
+### State Management
+- **Pinia Store**: Active session UI state (current selections, player name)
+- **MongoDB**: Persistent state (character stats, story progress, current scene/turn)
+- **localStorage**: Player name persistence for convenience
 
-## Port Schema
-All services use ports ending in `93` (C1 hex → Call of Cthulhu v1)
-- Frontend: 3093
-- Backend: 8093
-- MongoDB: 27093
-- Qdrant: 6393
-- n8n: 5693
-
-## Setup
-1. Ensure Docker image `fastapi_01:latest` is built
-2. Start with Dockge: Upload docker-compose.yml
-3. Access:
-   - Frontend: http://localhost:3093
-   - Backend API: http://localhost:8093/docs
-   - n8n: http://localhost:5693
-   - MongoDB: mongodb://localhost:27093
-   - Qdrant: http://localhost:6393
-
-## Development
-Open `Call_of_Cthulhu_01.code-workspace` in VSCode.
+### UI Pattern (Consistent Across All Steps)
+```
+┌─────────────────────────────────────────┐
+│ Table with Radio/Checkbox Selection     │
+├─────────────────────────────────────────┤
+│ ○ Existing Item 1      [Details ▼]      │
+│ ○ Existing Item 2      [Details ▼]      │
+│ ● Create New           [Form ▼]         │
+└─────────────────────────────────────────┘
 ```
 
-### 10. n8n/.gitkeep
-Empty file to track the directory in Git.
+- **Single select**: Radio buttons (World, Realm, Campaign, Session)
+- **Multi-select**: Checkboxes (Characters)
+- **Unfold**: Click to expand details or creation form
+- **Consistent layout** across all entity types
 
-## Git Initialization Commands
+## Implementation Scope
 
-**IMPORTANT: Run this manually in your VSCode terminal FIRST (before Claude Code executes git commands):**
+### Phase 1: Core Login Flow (Current)
+✅ **Full CRUD Implementation:**
+- World (name, ruleset, description)
+- Realm (name, world_id, players, description)
+- Campaign (name, realm_id, status, description)
+- Character (name, realm_id, type, controller, description)
+- Session (session_number, realm_id, campaign_id, attendance)
 
+⏸️ **Deferred to Later:**
+- Chapters, Scenes, Turns
+- NPCs, Objects, Locations
+- Full character sheets
+- Authentication/authorization
+
+### Backend API Structure
+
+**Base URL:** `/api/v1/`
+
+**Endpoints:**
+```
+GET    /worlds                    # List all worlds
+POST   /worlds                    # Create world
+GET    /worlds/{id}               # Get world details
+PUT    /worlds/{id}               # Update world
+DELETE /worlds/{id}               # Delete world
+
+GET    /realms?world_id={id}      # List realms (filtered by world)
+POST   /realms                    # Create realm
+GET    /realms/{id}               # Get realm details
+PUT    /realms/{id}               # Update realm
+DELETE /realms/{id}               # Delete realm
+
+GET    /campaigns?realm_id={id}   # List campaigns (filtered by realm)
+POST   /campaigns                 # Create campaign
+GET    /campaigns/{id}            # Get campaign details
+PUT    /campaigns/{id}            # Update campaign
+DELETE /campaigns/{id}            # Delete campaign
+
+GET    /characters?realm_id={id}&player={name}  # List player's characters
+POST   /characters                # Create character
+GET    /characters/{id}           # Get character details
+PUT    /characters/{id}           # Update character
+DELETE /characters/{id}           # Delete character
+
+GET    /sessions?realm_id={id}&campaign_id={id}  # List sessions
+POST   /sessions                  # Create session
+GET    /sessions/{id}             # Get session details
+GET    /sessions/latest?realm_id={id}&campaign_id={id}  # Get latest session
+PUT    /sessions/{id}             # Update session
+DELETE /sessions/{id}             # Delete session
+```
+
+### Frontend Structure
+
+**Router:**
+```
+/                       → Login (player name entry)
+/select/world           → World selection
+/select/realm           → Realm selection
+/select/campaign        → Campaign selection
+/select/characters      → Character selection
+/select/session         → Session choice (new/continue)
+/game                   → Main game view [FUTURE]
+```
+
+**Pinia Stores:**
+```javascript
+// stores/session.ts
+- playerName: string
+- selectedWorld: World | null
+- selectedRealm: Realm | null
+- selectedCampaign: Campaign | null
+- selectedCharacters: Character[]
+- currentSession: Session | null
+```
+
+**Components:**
+```
+src/
+├── views/
+│   ├── LoginView.vue           # Player name entry
+│   ├── WorldSelectView.vue     # World selection
+│   ├── RealmSelectView.vue     # Realm selection
+│   ├── CampaignSelectView.vue  # Campaign selection
+│   ├── CharacterSelectView.vue # Character selection (multi)
+│   └── SessionSelectView.vue   # New/Continue session
+├── components/
+│   ├── EntityTable.vue         # Reusable table for all entities
+│   ├── EntityRow.vue           # Expandable row component
+│   └── CreateEntityForm.vue    # Generic creation form
+└── stores/
+    └── session.ts              # Session state management
+```
+
+## Technical Stack
+
+### Backend
+- **FastAPI** (already installed)
+- **Motor** (async MongoDB driver - already installed)
+- **Pydantic** models for validation
+
+### Frontend
+- **Vue 3** with TypeScript
+- **Vue Router** for navigation
+- **Pinia** for state management
+- **Axios** for API calls
+
+### Available Backend Dependencies
+```python
+# Already in fastapi_01:latest image
+fastapi
+uvicorn
+motor              # MongoDB async driver
+python-multipart
+aiohttp
+diff-match-patch
+```
+
+## Development Commands
+
+### Git SSH Setup (Manual)
 ```bash
-# Start SSH agent and add key (enter passphrase when prompted)
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/git_marulb
-# Enter your passphrase interactively
+# Enter passphrase when prompted
 ```
 
-**After SSH agent is running, Claude Code can execute:**
-
+### Git Push
 ```bash
-cd /shared/projects_martin/Call_of_Cthulhu_01
-git init
-git add .
-git commit -m "Initial project setup with Docker Compose, FastAPI, Vue.js, n8n"
-git remote add origin git@github.com:marulb/Call_of_Cthulhu_V01.git
-git branch -M main
 git push -u origin main
 ```
 
-## Notes
-- Ollama instance running on host port 11434 (standard instance)
-- Docker image `fastapi_01:latest` already built with base dependencies
-- Database volumes will be created automatically on first run
-- n8n workflows will be saved in ./n8n/ directory (versionable)
+### Access Points
+- Frontend: http://localhost:3093
+- Backend API Docs: http://localhost:8093/docs
+- MongoDB: mongodb://localhost:27093
+- Qdrant: http://localhost:6393
+- n8n: http://localhost:5693
+
+## Port Schema
+All services use ports ending in `93` (C1 hex → Call of Cthulhu v1)
+
+## Next Steps (After Phase 1)
+1. Implement Chapter/Scene/Turn management
+2. Add NPC/Object/Location entities
+3. Build game session interface (turn-based gameplay)
+4. Integrate AI agents for narrative generation
+5. Add authentication and user management
