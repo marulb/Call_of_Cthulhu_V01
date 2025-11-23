@@ -2,13 +2,17 @@
 Mock AI endpoints for Keeper AI and Rules AI.
 These will be replaced with n8n workflows later.
 """
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 import random
+import httpx
 
 router = APIRouter(prefix="/ai", tags=["ai"])
+
+# n8n webhook URL (from docker-compose network)
+N8N_WEBHOOK_URL = "http://n8n:5678/webhook/coc_orchestrator"
 
 
 class KeeperRequest(BaseModel):
@@ -39,6 +43,19 @@ class RulesResponse(BaseModel):
     """Response from Rules AI."""
     answer: str
     rules_references: Optional[List[str]] = None
+
+
+class ProphetRequest(BaseModel):
+    """Request for Prophet AI (knowledge base assistant)."""
+    player_id: str
+    question: str
+    context: Optional[dict] = None
+
+
+class ProphetResponse(BaseModel):
+    """Response from Prophet AI."""
+    answer: str
+    references: Optional[List[str]] = None
 
 
 # ============== KEEPER AI ENDPOINTS ==============
@@ -193,11 +210,80 @@ async def search_rules(query: str):
     }
 
 
+# ============== PROPHET AI ENDPOINTS (n8n integration) ==============
+
+@router.post("/prophet/ask", response_model=ProphetResponse)
+async def ask_prophet_question(request: ProphetRequest):
+    """
+    Prophet AI endpoint - answers questions using the knowledge base via n8n workflow.
+    
+    This endpoint:
+    1. Receives player's question
+    2. Sends to n8n Keeper workflow with {"Prophet": "question"} format
+    3. Returns AI response with references
+    """
+    
+    try:
+        # Prepare payload for n8n webhook
+        payload = {"Prophet": request.question}
+        
+        # Call n8n webhook
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                N8N_WEBHOOK_URL,
+                json=payload,
+                headers={"Content-Type": "application/json"}
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"n8n webhook returned status {response.status_code}"
+                )
+            
+            # Parse n8n response
+            n8n_data = response.json()
+            
+            # Extract answer from n8n response
+            # The AI Agent returns the response in the body field
+            answer = n8n_data.get("output", n8n_data.get("body", ""))
+            
+            # If answer is still empty, try to get it from nested structure
+            if not answer and isinstance(n8n_data, dict):
+                # Try various possible response structures
+                answer = (
+                    n8n_data.get("text") or 
+                    n8n_data.get("response") or 
+                    str(n8n_data)
+                )
+            
+            return ProphetResponse(
+                answer=answer if answer else "The Prophet is silent...",
+                references=None  # TODO: Extract references if n8n provides them
+            )
+            
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=504,
+            detail="Request to Prophet AI timed out"
+        )
+    except httpx.RequestError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Could not connect to Prophet AI: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing Prophet request: {str(e)}"
+        )
+
+
 # ============== AI STATUS ENDPOINTS ==============
 
 @router.get("/status")
 async def ai_status():
-    """Check AI services status (mock)."""
+    """Check AI services status."""
     return {
         "keeper_ai": {
             "status": "mock",
@@ -206,6 +292,11 @@ async def ai_status():
         "rules_ai": {
             "status": "mock",
             "message": "Using mock responses - will be replaced with n8n workflow"
+        },
+        "prophet_ai": {
+            "status": "active",
+            "message": "Connected to n8n Keeper workflow",
+            "webhook_url": N8N_WEBHOOK_URL
         },
         "timestamp": datetime.utcnow().isoformat()
     }

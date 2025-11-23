@@ -1,7 +1,7 @@
 <template>
-  <div class="rules-chat">
+  <div class="prophet-chat">
     <div class="chat-header">
-      <h3>Rules Assistant</h3>
+      <h3>Prophet</h3>
       <span class="chat-badge">AI</span>
     </div>
 
@@ -10,7 +10,7 @@
         :class="{ 'is-ai': message.isAi }">
         <div class="message-header">
           <span class="message-author">
-            {{ message.isAi ? 'Rules AI' : 'You' }}
+            {{ message.isAi ? 'Prophet' : 'You' }}
           </span>
           <span class="message-time">{{ formatTime(message.timestamp) }}</span>
         </div>
@@ -25,7 +25,7 @@
 
       <div v-if="isWaitingForResponse" class="message-item is-ai typing">
         <div class="message-header">
-          <span class="message-author">Rules AI</span>
+          <span class="message-author">Prophet</span>
         </div>
         <div class="typing-indicator">
           <span></span>
@@ -36,14 +36,14 @@
 
       <div v-if="messages.length === 0" class="empty-state">
         <div class="ai-info">
-          <h4>Rules Assistant</h4>
-          <p>Ask me anything about Call of Cthulhu rules!</p>
+          <h4>Prophet - Your Guide to the Unknown</h4>
+          <p>Ask me about the mysteries and knowledge of the realm!</p>
           <div class="example-questions">
             <p><strong>Example questions:</strong></p>
             <ul>
-              <li>How do skill checks work?</li>
-              <li>What happens when I lose sanity?</li>
-              <li>How does combat initiative work?</li>
+              <li>What do I know about this place?</li>
+              <li>Tell me about the local legends</li>
+              <li>What secrets might be hidden here?</li>
             </ul>
           </div>
         </div>
@@ -51,7 +51,7 @@
     </div>
 
     <div class="chat-input">
-      <textarea v-model="newMessage" placeholder="Ask a rules question..." rows="2" @keyup.ctrl.enter="sendMessage"
+      <textarea v-model="newMessage" placeholder="Ask the Prophet..." rows="2" @keyup.ctrl.enter="sendMessage"
         :disabled="!connected || isWaitingForResponse"></textarea>
       <button @click="sendMessage" :disabled="!newMessage.trim() || !connected || isWaitingForResponse"
         class="btn-send">
@@ -68,7 +68,7 @@
 <script setup lang="ts">
 import { ref, nextTick, watch } from 'vue'
 
-interface RulesMessage {
+interface ProphetMessage {
   message: string
   isAi: boolean
   timestamp: string
@@ -76,7 +76,7 @@ interface RulesMessage {
 }
 
 const props = defineProps<{
-  messages: RulesMessage[]
+  messages: ProphetMessage[]
   connected: boolean
   isWaitingForResponse: boolean
 }>()
@@ -126,7 +126,7 @@ watch(
 </script>
 
 <style scoped>
-.rules-chat {
+.prophet-chat {
   display: flex;
   flex-direction: column;
   height: 100%;

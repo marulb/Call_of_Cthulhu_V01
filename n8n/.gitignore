@@ -13,3 +13,6 @@ ssh/
 
 # Config (may contain sensitive data)
 config
+
+# tmp files
+tmp

@@ -36,8 +36,8 @@
         </div>
 
             <div class="grid-item rules" :style="{ gridArea: 'rules', height: areaHeightPx + 'px' }">
-          <RulesChat :messages="rulesMessages" :connected="socket.connected.value"
-            :is-waiting-for-response="isWaitingForRulesResponse" @send-message="handleSendRulesMessage" />
+          <ChatProphet :messages="prophetMessages" :connected="socket.connected.value"
+            :is-waiting-for-response="isWaitingForProphetResponse" @send-message="handleSendProphetMessage" />
         </div>
       </div>
     </div>
@@ -54,7 +54,7 @@ import PlayersList from '@/components/PlayersList.vue'
 import ActionList from '@/components/ActionList.vue'
 import TurnHistory from '@/components/TurnHistory.vue'
 import RealmChat from '@/components/RealmChat.vue'
-import RulesChat from '@/components/RulesChat.vue'
+import ChatProphet from '@/components/ChatProphet.vue'
 import type { ActionDraft, Turn, ChatMessage } from '@/types/gameplay'
 
 const router = useRouter()
@@ -64,8 +64,8 @@ const socket = useSocket()
 const actionDrafts = ref<ActionDraft[]>([])
 const turns = ref<Turn[]>([])
 const realmMessages = ref<ChatMessage[]>([])
-const rulesMessages = ref<any[]>([])
-const isWaitingForRulesResponse = ref(false)
+const prophetMessages = ref<any[]>([])
+const isWaitingForProphetResponse = ref(false)
 const currentChapter = ref<string>('')
 const currentScene = ref<any>(null)
 const allRealmCharacters = ref<any[]>([]) // All characters in the realm
@@ -252,12 +252,12 @@ function setupSocketListeners() {
   })
 
   socket.onRulesChatResponse((data: { message: string; timestamp: string }) => {
-    rulesMessages.value.push({
+    prophetMessages.value.push({
       message: data.message,
       isAi: true,
       timestamp: data.timestamp
     })
-    isWaitingForRulesResponse.value = false
+    isWaitingForProphetResponse.value = false
   })
 }
 
@@ -503,20 +503,18 @@ function handleSendRealmMessage(message: string) {
   socket.emitRealmChatMessage(chatMessage, sessionStore.currentSession!.id)
 }
 
-function handleSendRulesMessage(message: string) {
+function handleSendProphetMessage(message: string) {
   const userMessage = {
     message,
     isAi: false,
     timestamp: new Date().toISOString()
   }
 
-  rulesMessages.value.push(userMessage)
-  isWaitingForRulesResponse.value = true
+  prophetMessages.value.push(userMessage)
+  isWaitingForProphetResponse.value = true
 
-  socket.emitRulesChatMessage(sessionStore.playerId!, message, new Date().toISOString())
-
-  // Also call REST API as fallback
-  fetch(`${API_BASE}/api/v1/ai/rules/ask`, {
+  // Call new Prophet endpoint (via n8n)
+  fetch(`${API_BASE}/api/v1/ai/prophet/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -526,19 +524,22 @@ function handleSendRulesMessage(message: string) {
   })
     .then((res) => res.json())
     .then((data) => {
-      if (isWaitingForRulesResponse.value) {
-        rulesMessages.value.push({
-          message: data.answer,
-          isAi: true,
-          timestamp: new Date().toISOString(),
-          references: data.rules_references
-        })
-        isWaitingForRulesResponse.value = false
-      }
+      prophetMessages.value.push({
+        message: data.answer,
+        isAi: true,
+        timestamp: new Date().toISOString(),
+        references: data.references
+      })
+      isWaitingForProphetResponse.value = false
     })
     .catch((error) => {
-      console.error('Error getting rules response:', error)
-      isWaitingForRulesResponse.value = false
+      console.error('Error getting prophet response:', error)
+      prophetMessages.value.push({
+        message: 'The Prophet seems troubled and cannot respond at this time...',
+        isAi: true,
+        timestamp: new Date().toISOString()
+      })
+      isWaitingForProphetResponse.value = false
     })
 }
 </script>
