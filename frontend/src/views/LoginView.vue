@@ -137,33 +137,38 @@ function onBlur() {
 </script>
 
 <style scoped>
+/* TODO: Consider adding to base.css:
+   --color-accent-primary (for CTAs and primary actions)
+   --color-accent-danger (for error states)
+*/
+
 .login-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, var(--vt-c-black) 0%, var(--vt-c-deep-sea) 100%);
   padding: 20px;
 }
 
 .login-card {
-  background: white;
+  background: var(--color-background);
   padding: 40px;
   border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 40px var(--vt-c-divider-dark-1);
   max-width: 450px;
   width: 100%;
 }
 
 h1 {
-  color: #1a1a2e;
+  color: var(--color-heading);
   margin: 0 0 10px 0;
   font-size: 32px;
   text-align: center;
 }
 
 .subtitle {
-  color: #666;
+  color: var(--vt-c-fog);
   text-align: center;
   margin: 0 0 30px 0;
   font-size: 14px;
@@ -183,36 +188,39 @@ h1 {
 
 label {
   font-weight: 600;
-  color: #333;
+  color: var(--color-text);
   font-size: 14px;
 }
 
 .input-field {
   padding: 12px 16px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   font-size: 16px;
   transition: border-color 0.2s;
+  background: var(--color-background);
+  color: var(--color-text);
 }
 
 .input-field:focus {
   outline: none;
-  border-color: #4a90e2;
+  border-color: var(--vt-c-ink-green-light);
 }
 
 .hint {
   font-size: 12px;
-  color: #999;
+  color: var(--vt-c-fog);
   margin: 0;
 }
 
 .error-message {
-  background: #fee;
-  color: #c00;
+  background: var(--color-background-mute);
+  color: var(--vt-c-metallic-accent);
   padding: 12px;
   border-radius: 8px;
   margin-bottom: 20px;
   font-size: 14px;
+  border-left: 3px solid var(--vt-c-metallic-accent);
 }
 
 .autocomplete-wrapper {
@@ -224,24 +232,25 @@ label {
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
-  border: 2px solid #4a90e2;
+  background: var(--color-background);
+  border: 2px solid var(--vt-c-ink-green-light);
   border-top: none;
   border-radius: 0 0 8px 8px;
   max-height: 200px;
   overflow-y: auto;
   z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--vt-c-divider-dark-1);
 }
 
 .suggestion-item {
   padding: 10px 16px;
   cursor: pointer;
   transition: background 0.2s;
+  color: var(--color-text);
 }
 
 .suggestion-item:hover {
-  background: #f0f7ff;
+  background: var(--color-background-mute);
 }
 
 .btn-primary,
@@ -256,27 +265,30 @@ label {
 }
 
 .btn-primary {
-  background: #4a90e2;
-  color: white;
+  background: var(--vt-c-ink-green);
+  color: var(--vt-c-white);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #357abd;
+  background: var(--vt-c-ink-green-light);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+  box-shadow: 0 4px 12px var(--vt-c-divider-dark-1);
 }
 
 .btn-primary:disabled {
-  background: #ccc;
+  background: var(--vt-c-fog);
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .btn-secondary {
-  background: #f5f5f5;
-  color: #333;
+  background: var(--color-background-soft);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .btn-secondary:hover {
-  background: #e0e0e0;
+  background: var(--color-background-mute);
+  border-color: var(--color-border-hover);
 }
 </style>

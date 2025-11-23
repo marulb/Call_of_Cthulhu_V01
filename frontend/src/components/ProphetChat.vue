@@ -126,14 +126,13 @@ watch(
 </script>
 
 <style scoped>
-/* Same styles as original ChatProphet component */
 .prophet-chat {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: white;
+  background: var(--color-background);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px var(--vt-c-divider-light-1);
   overflow: hidden;
 }
 
@@ -142,8 +141,8 @@ watch(
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: #ff9800;
-  color: white;
+  background: var(--vt-c-metallic-accent);
+  color: var(--vt-c-white);
 }
 
 .chat-header h3 {
@@ -153,7 +152,7 @@ watch(
 }
 
 .chat-badge {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--vt-c-divider-light-2);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 11px;
@@ -165,20 +164,20 @@ watch(
   flex: 1;
   overflow-y: auto;
   padding: 12px;
-  background: #f9f9f9;
+  background: var(--color-background-soft);
 }
 
 .message-item {
   margin-bottom: 12px;
   padding: 10px 12px;
-  background: white;
+  background: var(--color-background);
   border-radius: 8px;
-  border-left: 3px solid #4caf50;
+  border-left: 3px solid var(--vt-c-ink-green);
 }
 
 .message-item.is-ai {
-  border-left-color: #ff9800;
-  background: #fff9f0;
+  border-left-color: var(--vt-c-metallic-accent);
+  background: var(--color-background-mute);
 }
 
 .message-item.typing {
@@ -195,18 +194,18 @@ watch(
 .message-author {
   font-weight: 600;
   font-size: 13px;
-  color: #333;
+  color: var(--color-text);
 }
 
 .message-time {
   font-size: 11px;
-  color: #999;
+  color: var(--vt-c-fog);
 }
 
 .message-content {
   font-size: 13px;
   line-height: 1.5;
-  color: #333;
+  color: var(--color-text);
   white-space: pre-wrap;
   word-wrap: break-word;
 }
@@ -214,9 +213,9 @@ watch(
 .message-references {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--color-border);
   font-size: 12px;
-  color: #666;
+  color: var(--vt-c-fog);
 }
 
 .message-references ul {
@@ -237,7 +236,7 @@ watch(
 .typing-indicator span {
   width: 8px;
   height: 8px;
-  background: #ff9800;
+  background: var(--vt-c-metallic-accent);
   border-radius: 50%;
   animation: typing 1.4s infinite;
 }
@@ -277,18 +276,18 @@ watch(
 
 .ai-info h4 {
   margin: 0 0 8px 0;
-  color: #ff9800;
+  color: var(--vt-c-metallic-accent);
   font-size: 16px;
 }
 
 .ai-info>p {
   margin: 0 0 16px 0;
-  color: #666;
+  color: var(--vt-c-fog);
   font-size: 13px;
 }
 
 .example-questions {
-  background: #fff9f0;
+  background: var(--color-background-mute);
   padding: 12px;
   border-radius: 6px;
   text-align: left;
@@ -297,14 +296,14 @@ watch(
 .example-questions p {
   margin: 0 0 6px 0;
   font-size: 12px;
-  color: #666;
+  color: var(--vt-c-fog);
 }
 
 .example-questions ul {
   margin: 0;
   padding-left: 20px;
   font-size: 12px;
-  color: #666;
+  color: var(--vt-c-fog);
 }
 
 .example-questions li {
@@ -315,35 +314,38 @@ watch(
   display: flex;
   gap: 8px;
   padding: 12px;
-  background: #f8f8f8;
-  border-top: 1px solid #e0e0e0;
+  background: var(--color-background-soft);
+  border-top: 1px solid var(--color-border);
 }
 
 .chat-input textarea {
   flex: 1;
   padding: 10px 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 13px;
   font-family: inherit;
   resize: vertical;
   min-height: 42px;
+  background: var(--color-background);
+  color: var(--color-text);
 }
 
 .chat-input textarea:focus {
   outline: none;
-  border-color: #ff9800;
+  border-color: var(--vt-c-metallic-accent);
 }
 
 .chat-input textarea:disabled {
-  background: #f0f0f0;
+  background: var(--color-background-mute);
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .btn-send {
   padding: 10px 20px;
-  background: #ff9800;
-  color: white;
+  background: var(--vt-c-metallic-accent);
+  color: var(--vt-c-white);
   border: none;
   border-radius: 6px;
   font-size: 13px;
@@ -354,7 +356,7 @@ watch(
 }
 
 .btn-send:hover:not(:disabled) {
-  background: #f57c00;
+  background: var(--vt-c-ink-green);
 }
 
 .btn-send:disabled {
@@ -364,13 +366,13 @@ watch(
 
 .chat-footer {
   padding: 8px 12px;
-  background: #f8f8f8;
-  border-top: 1px solid #e0e0e0;
+  background: var(--color-background-soft);
+  border-top: 1px solid var(--color-border);
   text-align: center;
 }
 
 .help-text {
   font-size: 11px;
-  color: #999;
+  color: var(--vt-c-fog);
 }
 </style>

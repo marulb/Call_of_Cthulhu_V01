@@ -336,13 +336,19 @@ function submitTurn() {
 </script>
 
 <style scoped>
+/* TODO: Consider adding to base.css:
+   --color-accent-ready (for ready/success states)
+   --color-accent-danger (for delete/error actions)
+   --color-accent-ooc (for OOC notes background)
+*/
+
 .active-turn {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: white;
+  background: var(--color-background);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px var(--vt-c-divider-light-1);
   overflow: hidden;
 }
 
@@ -351,21 +357,21 @@ function submitTurn() {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: #f8f8f8;
-  border-bottom: 1px solid #e0e0e0;
+  background: var(--color-background-soft);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .list-header h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: var(--color-heading);
 }
 
 .btn-add {
   padding: 6px 12px;
-  background: #6c63ff;
-  color: white;
+  background: var(--vt-c-ink-green-light);
+  color: var(--vt-c-white);
   border: none;
   border-radius: 6px;
   font-size: 13px;
@@ -375,7 +381,7 @@ function submitTurn() {
 }
 
 .btn-add:hover {
-  background: #5952d4;
+  background: var(--vt-c-ink-green);
 }
 
 .actions-container {
@@ -385,11 +391,11 @@ function submitTurn() {
 }
 
 .action-form {
-  background: #f9f9f9;
+  background: var(--color-background-soft);
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 16px;
-  border: 2px solid #6c63ff;
+  border: 2px solid var(--vt-c-ink-green-light);
 }
 
 .form-header {
@@ -402,14 +408,14 @@ function submitTurn() {
 .form-header h4 {
   margin: 0;
   font-size: 15px;
-  color: #333;
+  color: var(--color-heading);
 }
 
 .btn-cancel {
   background: none;
   border: none;
   font-size: 18px;
-  color: #999;
+  color: var(--vt-c-fog);
   cursor: pointer;
   padding: 0;
   width: 24px;
@@ -420,7 +426,7 @@ function submitTurn() {
 }
 
 .btn-cancel:hover {
-  color: #666;
+  color: var(--color-text);
 }
 
 .form-field {
@@ -432,7 +438,7 @@ function submitTurn() {
   margin-bottom: 4px;
   font-size: 12px;
   font-weight: 600;
-  color: #555;
+  color: var(--vt-c-fog);
 }
 
 .form-field input,
@@ -440,18 +446,20 @@ function submitTurn() {
 .form-field select {
   width: 100%;
   padding: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   font-size: 13px;
   font-family: inherit;
   resize: vertical;
+  background: var(--color-background);
+  color: var(--color-text);
 }
 
 .form-field input:focus,
 .form-field textarea:focus,
 .form-field select:focus {
   outline: none;
-  border-color: #6c63ff;
+  border-color: var(--vt-c-ink-green-light);
 }
 
 .form-actions {
@@ -463,8 +471,8 @@ function submitTurn() {
 .btn-primary {
   flex: 1;
   padding: 10px;
-  background: #6c63ff;
-  color: white;
+  background: var(--vt-c-ink-green-light);
+  color: var(--vt-c-white);
   border: none;
   border-radius: 6px;
   font-size: 14px;
@@ -474,7 +482,7 @@ function submitTurn() {
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #5952d4;
+  background: var(--vt-c-ink-green);
 }
 
 .btn-primary:disabled {
@@ -484,8 +492,8 @@ function submitTurn() {
 
 .btn-secondary {
   padding: 10px 16px;
-  background: #e0e0e0;
-  color: #333;
+  background: var(--color-background-mute);
+  color: var(--color-text);
   border: none;
   border-radius: 6px;
   font-size: 14px;
@@ -495,7 +503,7 @@ function submitTurn() {
 }
 
 .btn-secondary:hover {
-  background: #d0d0d0;
+  background: var(--color-border);
 }
 
 .drafts-list {
@@ -505,24 +513,24 @@ function submitTurn() {
 }
 
 .draft-item {
-  background: #fafafa;
+  background: var(--color-background-soft);
   padding: 12px;
   border-radius: 6px;
-  border-left: 3px solid #ddd;
+  border-left: 3px solid var(--color-border);
   transition: all 0.2s;
 }
 
 .draft-item.ready {
-  border-left-color: #4caf50;
-  background: #f1f8f4;
+  border-left-color: var(--vt-c-ink-green);
+  background: var(--color-background-mute);
 }
 
 .draft-item.is-mine {
-  border-left-color: #6c63ff;
+  border-left-color: var(--vt-c-ink-green-light);
 }
 
 .draft-item.is-mine.ready {
-  border-left-color: #4caf50;
+  border-left-color: var(--vt-c-ink-green);
 }
 
 .draft-header {
@@ -534,7 +542,7 @@ function submitTurn() {
 
 .draft-character {
   font-weight: 700;
-  color: #333;
+  color: var(--color-heading);
   font-size: 14px;
 }
 
@@ -546,12 +554,12 @@ function submitTurn() {
 }
 
 .draft-player {
-  color: #666;
+  color: var(--vt-c-fog);
 }
 
 .ready-badge {
-  background: #4caf50;
-  color: white;
+  background: var(--vt-c-ink-green);
+  color: var(--vt-c-white);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 11px;
@@ -566,19 +574,19 @@ function submitTurn() {
   margin-bottom: 6px;
   font-size: 13px;
   line-height: 1.4;
-  color: #333;
+  color: var(--color-text);
 }
 
 .content-section.small {
   font-size: 12px;
-  color: #666;
+  color: var(--vt-c-fog);
 }
 
 .content-section.ooc {
-  background: #fff9e6;
+  background: var(--color-background-mute);
   padding: 6px;
   border-radius: 4px;
-  border-left: 2px solid #ffb84d;
+  border-left: 2px solid var(--vt-c-metallic-accent);
 }
 
 .draft-actions {
@@ -590,8 +598,8 @@ function submitTurn() {
 .btn-ready {
   flex: 1;
   padding: 6px 12px;
-  background: #e0e0e0;
-  color: #333;
+  background: var(--color-background-mute);
+  color: var(--color-text);
   border: none;
   border-radius: 4px;
   font-size: 12px;
@@ -601,8 +609,8 @@ function submitTurn() {
 }
 
 .btn-ready.active {
-  background: #4caf50;
-  color: white;
+  background: var(--vt-c-ink-green);
+  color: var(--vt-c-white);
 }
 
 .btn-ready:hover {
@@ -611,24 +619,25 @@ function submitTurn() {
 
 .btn-delete {
   padding: 6px 12px;
-  background: #ffebee;
-  color: #d32f2f;
-  border: none;
+  background: var(--color-background-mute);
+  color: var(--vt-c-metallic-accent);
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
 .btn-delete:hover {
-  background: #ffcdd2;
+  background: var(--color-border);
+  border-color: var(--vt-c-metallic-accent);
 }
 
 .empty-state {
   text-align: center;
   padding: 40px 20px;
-  color: #999;
+  color: var(--vt-c-fog);
 }
 
 .empty-state p {
@@ -637,8 +646,8 @@ function submitTurn() {
 
 .list-footer {
   padding: 12px 16px;
-  background: #f8f8f8;
-  border-top: 1px solid #e0e0e0;
+  background: var(--color-background-soft);
+  border-top: 1px solid var(--color-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -647,13 +656,13 @@ function submitTurn() {
 .action-summary {
   font-size: 13px;
   font-weight: 600;
-  color: #666;
+  color: var(--vt-c-fog);
 }
 
 .btn-submit {
   padding: 8px 16px;
-  background: #4caf50;
-  color: white;
+  background: var(--vt-c-ink-green);
+  color: var(--vt-c-white);
   border: none;
   border-radius: 6px;
   font-size: 14px;
@@ -663,6 +672,6 @@ function submitTurn() {
 }
 
 .btn-submit:hover {
-  background: #45a049;
+  background: var(--vt-c-deep-sea);
 }
 </style>

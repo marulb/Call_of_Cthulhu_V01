@@ -131,12 +131,12 @@ function handleBack() {
 }
 
 h2 {
-  color: #1a1a2e;
+  color: var(--color-heading);
   margin: 0 0 10px 0;
 }
 
 .description {
-  color: #666;
+  color: var(--vt-c-fog);
   margin: 0 0 20px 0;
 }
 
@@ -148,13 +148,14 @@ h2 {
 }
 
 .loading {
-  background: #f0f0f0;
-  color: #666;
+  background: var(--color-background-soft);
+  color: var(--vt-c-fog);
 }
 
 .error {
-  background: #fee;
-  color: #c00;
+  background: var(--color-background-mute);
+  color: var(--vt-c-metallic-accent);
+  border-left: 3px solid var(--vt-c-metallic-accent);
 }
 
 .session-options {
@@ -164,19 +165,19 @@ h2 {
 }
 
 .session-option {
-  background: white;
-  border: 2px solid #e0e0e0;
+  background: var(--color-background);
+  border: 2px solid var(--color-border);
   border-radius: 12px;
   padding: 24px;
 }
 
 .session-option h3 {
   margin: 0 0 16px 0;
-  color: #333;
+  color: var(--color-heading);
 }
 
 .session-info {
-  background: #f9f9f9;
+  background: var(--color-background-soft);
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 16px;
@@ -187,7 +188,7 @@ h2 {
 }
 
 .session-info .meta {
-  color: #999;
+  color: var(--vt-c-fog);
   font-size: 12px;
 }
 
@@ -205,22 +206,24 @@ h2 {
 
 .form-group label {
   font-weight: 600;
-  color: #333;
+  color: var(--color-text);
   font-size: 14px;
 }
 
 .form-group input,
 .form-group textarea {
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   font-size: 14px;
+  background: var(--color-background);
+  color: var(--color-text);
 }
 
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #4a90e2;
+  border-color: var(--vt-c-ink-green-light);
 }
 
 .navigation {
@@ -240,21 +243,23 @@ h2 {
 }
 
 .btn-primary {
-  background: #4a90e2;
-  color: white;
+  background: var(--vt-c-ink-green);
+  color: var(--vt-c-white);
   width: 100%;
 }
 
 .btn-primary:hover {
-  background: #357abd;
+  background: var(--vt-c-ink-green-light);
 }
 
 .btn-secondary {
-  background: #f5f5f5;
-  color: #333;
+  background: var(--color-background-soft);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .btn-secondary:hover {
-  background: #e0e0e0;
+  background: var(--color-background-mute);
+  border-color: var(--color-border-hover);
 }
 </style>

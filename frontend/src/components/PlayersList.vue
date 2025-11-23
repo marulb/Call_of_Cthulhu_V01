@@ -158,14 +158,23 @@ const readyCount = computed(() => {
 </script>
 
 <style scoped>
+/* TODO: Consider adding to base.css:
+   --color-player-local-not-ready (yellow background for local player not ready)
+   --color-player-local-ready (green background for local player ready)
+   --color-player-remote-not-ready (red background for remote player not ready)
+   --color-player-remote-ready (green background for remote player ready)
+   --color-led-off (LED indicator when toggled off/red)
+   --color-led-on (LED indicator when toggled on/green)
+*/
+
 .players-list-horizontal {
   display: flex;
   align-items: center;
   gap: 16px;
   width: 100%;
   padding: 12px 16px;
-  background: #f5f5f5;
-  border-bottom: 2px solid #ddd;
+  background: var(--color-background-soft);
+  border-bottom: 2px solid var(--color-border);
   container-type: inline-size;
   container-name: players-list;
   /* Centralized entity sizing constants (change here to affect all entity widths) */
@@ -325,36 +334,35 @@ const readyCount = computed(() => {
   }
 }
 
-
-/* Local player/character: yellow (not ready) -> green (ready) */
+/* Local player/character: muted background (not ready) -> murky green (ready) */
 .player-row.is-local.is-not-ready,
 .character-cell.is-local.is-not-ready {
-  background-color: #fff9c4;
-  border-color: #f9a825;
+  background-color: var(--color-background-mute);
+  border-color: var(--vt-c-metallic-accent);
 }
 
 .player-row.is-local.is-ready,
 .character-cell.is-local.is-ready {
-  background-color: #c8e6c9;
-  border-color: #4caf50;
+  background-color: var(--color-background-mute);
+  border-color: var(--vt-c-ink-green);
 }
 
-/* Remote player/character: red (not ready) -> green (ready) */
+/* Remote player/character: darker background (not ready) -> murky green (ready) */
 .player-row.is-remote.is-not-ready,
 .character-cell.is-remote.is-not-ready {
-  background-color: #ffcdd2;
-  border-color: #e57373;
+  background-color: var(--color-background-soft);
+  border-color: var(--vt-c-fog);
 }
 
 .player-row.is-remote.is-ready,
 .character-cell.is-remote.is-ready {
-  background-color: #c8e6c9;
-  border-color: #4caf50;
+  background-color: var(--color-background-mute);
+  border-color: var(--vt-c-ink-green);
 }
 
 .entity-name {
   font-size: 13px;
-  color: #333;
+  color: var(--color-text);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -368,18 +376,18 @@ const readyCount = computed(() => {
 .character-cell .entity-name {
   font-size: 12px;
   font-weight: 500;
-  color: #555;
+  color: var(--vt-c-fog);
 }
 
 /* Master Badge */
 .master-badge {
-  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-  color: #333;
+  background: linear-gradient(135deg, var(--vt-c-metallic-accent) 0%, var(--vt-c-ink-green-light) 100%);
+  color: var(--vt-c-white);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 10px;
   font-weight: 700;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px var(--vt-c-divider-dark-1);
   flex-shrink: 0;
 }
 
@@ -413,48 +421,48 @@ const readyCount = computed(() => {
 /* LED colors: ALWAYS red or green (never yellow) */
 /* When entity is NOT ready -> LED is GREEN (click to mark ready) */
 .is-not-ready .ready-toggle .led {
-  background-color: #4caf50;
-  border-color: #2e7d32;
-  box-shadow: 0 0 8px rgba(76, 175, 80, 0.7);
+  background-color: var(--vt-c-ink-green);
+  border-color: var(--vt-c-deep-sea);
+  box-shadow: 0 0 8px var(--vt-c-ink-green-light);
 }
 
 /* When entity IS ready -> LED is RED (click to mark not ready) */
 .is-ready .ready-toggle .led {
-  background-color: #f44336;
-  border-color: #c62828;
-  box-shadow: 0 0 8px rgba(244, 67, 54, 0.7);
+  background-color: var(--vt-c-metallic-accent);
+  border-color: var(--vt-c-fog);
+  box-shadow: 0 0 8px var(--vt-c-metallic-accent);
 }
 
 .no-characters {
   padding: 6px 10px;
   font-size: 11px;
-  color: #999;
+  color: var(--vt-c-fog);
   font-style: italic;
-  background: rgba(0, 0, 0, 0.05);
-  border: 2px solid #ddd;
+  background: var(--color-background-mute);
+  border: 2px solid var(--color-border);
   border-radius: 4px;
   min-width: 80px;
 }
 
 .empty-state {
   padding: 16px;
-  color: #999;
+  color: var(--vt-c-fog);
   font-style: italic;
 }
 
 .players-summary {
   padding: 8px 16px;
-  background: white;
+  background: var(--color-background);
   border-radius: 6px;
-  border: 2px solid #4caf50;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 2px solid var(--vt-c-ink-green);
+  box-shadow: 0 2px 4px var(--vt-c-divider-light-1);
   flex-shrink: 0;
 }
 
 .summary-text {
   font-size: 13px;
   font-weight: 700;
-  color: #2e7d32;
+  color: var(--vt-c-ink-green);
   white-space: nowrap;
 }
 </style>

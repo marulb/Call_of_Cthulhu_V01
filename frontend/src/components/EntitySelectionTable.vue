@@ -179,12 +179,12 @@ function cancelCreate() {
 }
 
 h2 {
-  color: #1a1a2e;
+  color: var(--color-heading);
   margin: 0 0 10px 0;
 }
 
 .description {
-  color: #666;
+  color: var(--vt-c-fog);
   margin: 0 0 20px 0;
 }
 
@@ -196,13 +196,14 @@ h2 {
 }
 
 .loading {
-  background: #f0f0f0;
-  color: #666;
+  background: var(--color-background-soft);
+  color: var(--vt-c-fog);
 }
 
 .error {
-  background: #fee;
-  color: #c00;
+  background: var(--color-background-mute);
+  color: var(--vt-c-metallic-accent);
+  border-left: 3px solid var(--vt-c-metallic-accent);
 }
 
 .selection-container {
@@ -218,21 +219,21 @@ h2 {
 }
 
 .entity-item {
-  background: white;
-  border: 2px solid #e0e0e0;
+  background: var(--color-background);
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   padding: 16px;
   transition: all 0.2s;
 }
 
 .entity-item:hover {
-  border-color: #4a90e2;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--vt-c-ink-green-light);
+  box-shadow: 0 2px 8px var(--vt-c-divider-light-1);
 }
 
 .entity-item.selected {
-  border-color: #4a90e2;
-  background: #f0f7ff;
+  border-color: var(--vt-c-ink-green-light);
+  background: var(--color-background-mute);
 }
 
 .entity-header {
@@ -247,6 +248,7 @@ h2 {
   width: 18px;
   height: 18px;
   cursor: pointer;
+  accent-color: var(--vt-c-ink-green);
 }
 
 .entity-info {
@@ -256,49 +258,50 @@ h2 {
 
 .entity-info h3 {
   margin: 0 0 4px 0;
-  color: #333;
+  color: var(--color-heading);
   font-size: 16px;
 }
 
 .entity-description {
   margin: 0;
-  color: #666;
+  color: var(--vt-c-fog);
   font-size: 14px;
 }
 
 .entity-details {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--color-border);
 }
 
 .entity-details pre {
-  background: #f5f5f5;
+  background: var(--color-background-soft);
   padding: 12px;
   border-radius: 4px;
   overflow-x: auto;
   font-size: 12px;
+  color: var(--color-text);
 }
 
 .no-entities {
-  background: #f9f9f9;
+  background: var(--color-background-soft);
   padding: 40px 20px;
   text-align: center;
   border-radius: 8px;
-  color: #666;
+  color: var(--vt-c-fog);
 }
 
 .create-section {
-  border-top: 2px dashed #e0e0e0;
+  border-top: 2px dashed var(--color-border);
   padding-top: 20px;
 }
 
 .btn-create {
   width: 100%;
   padding: 12px;
-  background: #fff;
-  border: 2px dashed #4a90e2;
-  color: #4a90e2;
+  background: var(--color-background);
+  border: 2px dashed var(--vt-c-ink-green-light);
+  color: var(--vt-c-ink-green-light);
   border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
@@ -307,19 +310,19 @@ h2 {
 }
 
 .btn-create:hover {
-  background: #f0f7ff;
+  background: var(--color-background-mute);
   border-style: solid;
 }
 
 .create-form {
-  background: #f9f9f9;
+  background: var(--color-background-soft);
   padding: 20px;
   border-radius: 8px;
 }
 
 .create-form h3 {
   margin: 0 0 16px 0;
-  color: #333;
+  color: var(--color-heading);
 }
 
 .form-group {
@@ -330,7 +333,7 @@ h2 {
   display: block;
   margin-bottom: 4px;
   font-weight: 600;
-  color: #333;
+  color: var(--color-text);
   font-size: 14px;
 }
 
@@ -338,16 +341,18 @@ h2 {
 .form-group textarea {
   width: 100%;
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   font-size: 14px;
   box-sizing: border-box;
+  background: var(--color-background);
+  color: var(--color-text);
 }
 
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #4a90e2;
+  border-color: var(--vt-c-ink-green-light);
 }
 
 .form-actions {
@@ -374,25 +379,28 @@ h2 {
 }
 
 .btn-primary {
-  background: #4a90e2;
-  color: white;
+  background: var(--vt-c-ink-green);
+  color: var(--vt-c-white);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #357abd;
+  background: var(--vt-c-ink-green-light);
 }
 
 .btn-primary:disabled {
-  background: #ccc;
+  background: var(--vt-c-fog);
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .btn-secondary {
-  background: #f5f5f5;
-  color: #333;
+  background: var(--color-background-soft);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .btn-secondary:hover {
-  background: #e0e0e0;
+  background: var(--color-background-mute);
+  border-color: var(--color-border-hover);
 }
 </style>

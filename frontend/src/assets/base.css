@@ -1,24 +1,36 @@
-/* color palette from <https://github.com/vuejs/theme> */
+/* Call of Cthulhu color palette - atmospheric, low-saturation tones */
 :root {
-  --vt-c-white: #ffffff;
-  --vt-c-white-soft: #f8f8f8;
-  --vt-c-white-mute: #f2f2f2;
+  /* Aged paper tones - washed neutrals with hints of decay */
+  --vt-c-white: #e8e6df;        /* old parchment */
+  --vt-c-white-soft: #ddd9ce;   /* weathered paper */
+  --vt-c-white-mute: #d0cbbe;   /* aged document */
 
-  --vt-c-black: #181818;
-  --vt-c-black-soft: #222222;
-  --vt-c-black-mute: #282828;
+  /* Dirty off-blacks - charcoal with subtle undertones */
+  --vt-c-black: #1a1d1e;        /* deep charcoal with blue-green hint */
+  --vt-c-black-soft: #232627;   /* lighter charcoal */
+  --vt-c-black-mute: #2d3234;   /* muted slate */
 
-  --vt-c-indigo: #2c3e50;
+  /* Primary ink-green - murky, desaturated ocean/document tone */
+  --vt-c-indigo: #3a4f4a;       /* deep sea green */
+  
+  /* Additional Cthulhu palette colors */
+  --vt-c-ink-green: #3a4f4a;    /* murky ocean depths */
+  --vt-c-ink-green-light: #4d635d; /* lighter murky green */
+  --vt-c-deep-sea: #2a3a36;     /* abyssal darkness */
+  --vt-c-metallic-accent: #7a8075; /* tarnished brass/oxidized metal */
+  --vt-c-fog: #96988e;          /* harbor fog */
 
-  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
-  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
-  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
-  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
+  /* Atmospheric dividers - subtle, low contrast */
+  --vt-c-divider-light-1: rgba(58, 79, 74, 0.22);
+  --vt-c-divider-light-2: rgba(58, 79, 74, 0.10);
+  --vt-c-divider-dark-1: rgba(122, 128, 117, 0.35);
+  --vt-c-divider-dark-2: rgba(122, 128, 117, 0.18);
 
-  --vt-c-text-light-1: var(--vt-c-indigo);
-  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
+  /* Text colors - restrained contrast */
+  --vt-c-text-light-1: var(--vt-c-deep-sea);
+  --vt-c-text-light-2: rgba(42, 58, 54, 0.72);
   --vt-c-text-dark-1: var(--vt-c-white);
-  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
+  --vt-c-text-dark-2: rgba(232, 230, 223, 0.68);
 }
 
 /* semantic color variables for this project */

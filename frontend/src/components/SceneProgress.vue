@@ -129,13 +129,19 @@ function formatStatus(status: string) {
 </script>
 
 <style scoped>
+/* TODO: Consider adding to base.css:
+   --color-status-completed (for success states)
+   --color-status-processing (for in-progress states)
+   --color-status-ready (for ready states)
+*/
+
 .scene-progress {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: white;
+  background: var(--color-background);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px var(--vt-c-divider-light-1);
   overflow: hidden;
 }
 
@@ -144,20 +150,20 @@ function formatStatus(status: string) {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: #f8f8f8;
-  border-bottom: 1px solid #e0e0e0;
+  background: var(--color-background-soft);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .list-header h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: var(--color-heading);
 }
 
 .turn-count {
-  background: #ff9800;
-  color: white;
+  background: var(--vt-c-metallic-accent);
+  color: var(--vt-c-white);
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 12px;
@@ -171,11 +177,11 @@ function formatStatus(status: string) {
 }
 
 .turn-item {
-  background: #fafafa;
+  background: var(--color-background-soft);
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 12px;
-  border-left: 4px solid #6c63ff;
+  border-left: 4px solid var(--vt-c-ink-green-light);
 }
 
 .turn-header {
@@ -184,13 +190,13 @@ function formatStatus(status: string) {
   align-items: center;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .turn-number {
   font-weight: 700;
   font-size: 15px;
-  color: #333;
+  color: var(--color-heading);
 }
 
 .turn-status {
@@ -202,44 +208,44 @@ function formatStatus(status: string) {
 }
 
 .turn-status.completed {
-  background: #4caf50;
-  color: white;
+  background: var(--vt-c-ink-green);
+  color: var(--vt-c-white);
 }
 
 .turn-status.processing {
-  background: #ff9800;
-  color: white;
+  background: var(--vt-c-metallic-accent);
+  color: var(--vt-c-white);
 }
 
 .turn-status.ready_for_agents {
-  background: #2196f3;
-  color: white;
+  background: var(--vt-c-ink-green-light);
+  color: var(--vt-c-white);
 }
 
 .turn-status.draft {
-  background: #e0e0e0;
-  color: #666;
+  background: var(--color-background-mute);
+  color: var(--vt-c-fog);
 }
 
 .turn-actions h4 {
   margin: 0 0 8px 0;
   font-size: 13px;
-  color: #666;
+  color: var(--vt-c-fog);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .action-block {
-  background: white;
+  background: var(--color-background);
   padding: 10px;
   border-radius: 6px;
   margin-bottom: 8px;
-  border-left: 3px solid #2196f3;
+  border-left: 3px solid var(--vt-c-ink-green-light);
 }
 
 .action-actor {
   font-weight: 700;
-  color: #333;
+  color: var(--color-heading);
   margin-bottom: 6px;
   font-size: 14px;
 }
@@ -248,30 +254,30 @@ function formatStatus(status: string) {
   margin-bottom: 4px;
   font-size: 13px;
   line-height: 1.4;
-  color: #333;
+  color: var(--color-text);
 }
 
 .action-detail.minor {
   font-size: 12px;
-  color: #666;
+  color: var(--vt-c-fog);
 }
 
 .turn-reaction {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 2px solid #ff9800;
+  border-top: 2px solid var(--vt-c-metallic-accent);
 }
 
 .turn-reaction h4 {
   margin: 0 0 8px 0;
   font-size: 13px;
-  color: #ff9800;
+  color: var(--vt-c-metallic-accent);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .reaction-content {
-  background: #fff9f0;
+  background: var(--color-background-mute);
   padding: 12px;
   border-radius: 6px;
   margin-bottom: 8px;
@@ -281,20 +287,20 @@ function formatStatus(status: string) {
   margin: 0;
   font-size: 13px;
   line-height: 1.6;
-  color: #333;
+  color: var(--color-text);
   white-space: pre-wrap;
 }
 
 .reaction-summary {
   font-size: 12px;
-  color: #666;
+  color: var(--vt-c-fog);
   font-style: italic;
 }
 
 .turn-processing {
   margin-top: 12px;
   padding: 12px;
-  background: #fff9f0;
+  background: var(--color-background-mute);
   border-radius: 6px;
 }
 
@@ -302,7 +308,7 @@ function formatStatus(status: string) {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #ff9800;
+  color: var(--vt-c-metallic-accent);
   font-size: 13px;
   font-weight: 600;
 }
@@ -310,8 +316,8 @@ function formatStatus(status: string) {
 .spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #ffe0b2;
-  border-top-color: #ff9800;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--vt-c-metallic-accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -325,7 +331,7 @@ function formatStatus(status: string) {
 .empty-state {
   text-align: center;
   padding: 40px 20px;
-  color: #999;
+  color: var(--vt-c-fog);
 }
 
 .empty-state p {

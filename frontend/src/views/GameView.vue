@@ -601,12 +601,12 @@ function handleSendProphetMessage(message: string) {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #f0f0f0;
+  background: var(--color-background-soft);
 }
 
 .players-bar {
-  background: white;
-  border-bottom: 2px solid #e0e0e0;
+  background: var(--color-background);
+  border-bottom: 2px solid var(--color-border);
   padding: 12px 16px;
 }
 

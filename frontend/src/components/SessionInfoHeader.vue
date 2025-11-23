@@ -46,14 +46,20 @@ const props = defineProps<{
 </script>
 
 <style scoped>
+/* TODO: Consider adding to base.css semantic section:
+   --color-accent-success (for connected/online states)
+   --color-accent-warning (for chapter/alert highlighting)
+   For now using existing palette colors with atmospheric Cthulhu theme
+*/
+
 .session-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #1a1a2e;
-  color: white;
+  background: var(--vt-c-black-soft);
+  color: var(--vt-c-text-dark-1);
   padding: 16px 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px var(--vt-c-divider-dark-1);
 }
 
 .session-main-info {
@@ -64,7 +70,7 @@ const props = defineProps<{
   margin: 0 0 6px 0;
   font-size: 24px;
   font-weight: 700;
-  color: #f5f5f5;
+  color: var(--color-heading);
 }
 
 .session-meta {
@@ -72,25 +78,25 @@ const props = defineProps<{
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #b0b0b0;
+  color: var(--vt-c-fog);
 }
 
 .realm-name {
-  color: #6c63ff;
+  color: var(--vt-c-ink-green-light);
   font-weight: 600;
 }
 
 .session-number {
-  color: #4caf50;
+  color: var(--vt-c-metallic-accent);
 }
 
 .chapter-name {
-  color: #ff9800;
+  color: var(--vt-c-metallic-accent);
   font-style: italic;
 }
 
 .separator {
-  color: #555;
+  color: var(--vt-c-divider-dark-2);
 }
 
 .session-status {
@@ -109,13 +115,13 @@ const props = defineProps<{
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #888;
+  background: var(--vt-c-fog);
   transition: background 0.3s;
 }
 
 .status-dot.connected {
-  background: #4caf50;
-  box-shadow: 0 0 8px #4caf50;
+  background: var(--vt-c-ink-green-light);
+  box-shadow: 0 0 8px var(--vt-c-ink-green-light);
   animation: pulse 2s infinite;
 }
 
@@ -131,7 +137,7 @@ const props = defineProps<{
 
 .status-text {
   font-size: 14px;
-  color: #b0b0b0;
+  color: var(--vt-c-fog);
 }
 
 .master-info {
@@ -142,17 +148,17 @@ const props = defineProps<{
 }
 
 .master-label {
-  color: #888;
+  color: var(--vt-c-fog);
 }
 
 .master-name {
-  color: #ffd700;
+  color: var(--vt-c-metallic-accent);
   font-weight: 600;
 }
 
 .players-online {
   font-size: 14px;
-  color: #b0b0b0;
+  color: var(--vt-c-fog);
 }
 
 .online-count {
