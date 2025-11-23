@@ -6,39 +6,37 @@
       :current-chapter="currentChapter" :master-player-name="masterPlayerName" :players-online-count="socket.playersOnline.value.length"
       :is-connected="socket.connected.value" />
 
+    <!-- Players List - Horizontal at top -->
+    <div class="players-bar">
+      <PlayersList :players="playersWithDetails" :master-player-id="sessionStore.currentSession?.master_player_id" />
+    </div>
+
     <!-- Main Game Content -->
     <div class="game-content">
-      <!-- Left Sidebar: Players List -->
-      <div class="sidebar-left">
-        <PlayersList :players="playersWithDetails" :master-player-id="sessionStore.currentSession?.master_player_id" />
-      </div>
-
-      <!-- Middle Column: Action List & Turn History -->
-      <div class="content-middle">
-        <div class="content-top">
-          <div class="action-list-container">
-            <ActionList :drafts="actionDrafts" :characters="sessionStore.selectedCharacters" :players="allPlayers"
-              :current-player-id="sessionStore.playerId || ''" :session-id="sessionStore.currentSession?.id || ''"
-              @create-draft="handleCreateDraft" @update-draft="handleUpdateDraft" @delete-draft="handleDeleteDraft"
-              @reorder-drafts="handleReorderDrafts" @submit-turn="handleSubmitTurn" />
-          </div>
-
-          <div class="turn-history-container">
-            <TurnHistory :turns="turns" :characters="sessionStore.selectedCharacters" />
-          </div>
+      <!-- Top Row: Action List & Turn History -->
+      <div class="content-top">
+        <div class="action-list-container">
+          <ActionList :drafts="actionDrafts" :characters="sessionStore.selectedCharacters" :players="allPlayers"
+            :current-player-id="sessionStore.playerId || ''" :session-id="sessionStore.currentSession?.id || ''"
+            @create-draft="handleCreateDraft" @update-draft="handleUpdateDraft" @delete-draft="handleDeleteDraft"
+            @reorder-drafts="handleReorderDrafts" @submit-turn="handleSubmitTurn" />
         </div>
 
-        <!-- Bottom Row: Chats -->
-        <div class="content-bottom">
-          <div class="realm-chat-container">
-            <RealmChat :messages="realmMessages" :current-player-id="sessionStore.playerId || ''"
-              :connected="socket.connected.value" @send-message="handleSendRealmMessage" />
-          </div>
+        <div class="turn-history-container">
+          <TurnHistory :turns="turns" :characters="sessionStore.selectedCharacters" />
+        </div>
+      </div>
 
-          <div class="rules-chat-container">
-            <RulesChat :messages="rulesMessages" :connected="socket.connected.value"
-              :is-waiting-for-response="isWaitingForRulesResponse" @send-message="handleSendRulesMessage" />
-          </div>
+      <!-- Bottom Row: Chats -->
+      <div class="content-bottom">
+        <div class="realm-chat-container">
+          <RealmChat :messages="realmMessages" :current-player-id="sessionStore.playerId || ''"
+            :connected="socket.connected.value" @send-message="handleSendRealmMessage" />
+        </div>
+
+        <div class="rules-chat-container">
+          <RulesChat :messages="rulesMessages" :connected="socket.connected.value"
+            :is-waiting-for-response="isWaitingForRulesResponse" @send-message="handleSendRulesMessage" />
         </div>
       </div>
     </div>
@@ -75,11 +73,12 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8093'
 const playersWithDetails = computed(() => {
   return socket.playersOnline.value.map((p) => {
     const character = sessionStore.selectedCharacters.find(
-      (c: any) => c.player_id === p.player_id
+      (c: any) => c.controller?.owner === p.player_id
     )
     return {
       ...p,
       character_name: character?.name,
+      character_id: character?.id,
       ready: actionDrafts.value.some(
         (d: ActionDraft) => d.player_id === p.player_id && d.ready
       )
@@ -432,79 +431,66 @@ function handleSendRulesMessage(message: string) {
 .game-view {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
   background: #f0f0f0;
-  overflow: hidden;
+}
+
+.players-bar {
+  background: white;
+  border-bottom: 2px solid #e0e0e0;
+  padding: 12px 16px;
 }
 
 .game-content {
   flex: 1;
-  display: grid;
-  grid-template-columns: 300px 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
   padding: 16px;
-  overflow: hidden;
-}
-
-.sidebar-left {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.content-middle {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-height: 0;
+  max-width: 100%;
 }
 
 .content-top {
-  flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  min-height: 0;
+  height: 50vh;
+  min-height: 400px;
 }
 
 .action-list-container,
 .turn-history-container {
-  min-height: 0;
   display: flex;
+  overflow: hidden;
 }
 
 .content-bottom {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  height: 350px;
+  height: 400px;
+  min-height: 350px;
 }
 
 .realm-chat-container,
 .rules-chat-container {
   display: flex;
+  overflow: hidden;
 }
 
 @media (max-width: 1200px) {
-  .game-content {
-    grid-template-columns: 250px 1fr;
+  .content-top {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .action-list-container,
+  .turn-history-container {
+    min-height: 400px;
   }
 }
 
 @media (max-width: 768px) {
-  .game-content {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar-left {
-    height: 200px;
-  }
-
-  .content-top {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
   .content-bottom {
     grid-template-columns: 1fr;
     height: auto;
@@ -512,7 +498,7 @@ function handleSendRulesMessage(message: string) {
 
   .realm-chat-container,
   .rules-chat-container {
-    height: 300px;
+    height: 350px;
   }
 }
 </style>
