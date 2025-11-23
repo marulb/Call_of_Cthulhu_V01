@@ -166,25 +166,35 @@ const readyCount = computed(() => {
   padding: 12px 16px;
   background: #f5f5f5;
   border-bottom: 2px solid #ddd;
+  container-type: inline-size;
+  container-name: players-list;
 }
 
 .players-container {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 12px;
+  gap: 8px;
   flex: 1;
+  align-items: flex-start;
+  flex-wrap: wrap;
 }
 
-/* Player Column - represents one player and their characters */
+/* 
+  Owner Group (player-column) = one player + their characters
+  Layout modes controlled by container queries on .players-list-horizontal
+*/
 .player-column {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 120px;
+  gap: 4px;
+  box-sizing: border-box;
+  /* Mode 1 (widest): flex-direction: row - player and characters side-by-side */
+  flex-direction: row;
+  align-items: center;
+  /* Flexible sizing: grow/shrink between 80-160px per entity */
+  flex: 1 1 auto;
+  min-width: 80px;
 }
 
-/* Player Row (Header) */
+/* Player Row (entity) */
 .player-row {
   display: flex;
   align-items: center;
@@ -196,16 +206,22 @@ const readyCount = computed(() => {
   min-height: 36px;
   font-weight: 700;
   white-space: nowrap;
+  box-sizing: border-box;
+  /* Flexible width between 80-160px */
+  flex: 1 1 auto;
+  min-width: 80px;
+  max-width: 160px;
 }
 
-/* Characters Row - responsive container */
+/* Characters container */
 .characters-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
+  gap: 4px;
+  flex-wrap: nowrap;
+  flex: 1 1 auto;
 }
 
-/* Character Cell */
+/* Character Cell (entity) */
 .character-cell {
   display: flex;
   align-items: center;
@@ -217,7 +233,85 @@ const readyCount = computed(() => {
   min-height: 30px;
   font-weight: 500;
   white-space: nowrap;
+  box-sizing: border-box;
+  /* Flexible width between 80-160px */
+  flex: 1 1 auto;
+  min-width: 80px;
+  max-width: 160px;
 }
+
+/* 
+  Responsive Layout Modes:
+  
+  Mode 1 (default/widest): Single horizontal line
+    All entities (players + characters) flow horizontally side-by-side
+    Each entity flexes between 80-160px
+    
+  Mode 2 (medium): Two-line owner groups
+    Each owner-group has player on top, characters below
+    Owner groups sit side-by-side, wrapping as needed
+    
+  Mode 3 (narrow): Vertical owner groups
+    Owner groups stack vertically
+    Within each group: player on top, characters in horizontal row below
+    
+  Mode 4 (narrowest): Fully vertical
+    Everything stacked vertically, one entity per line
+*/
+
+/* Mode 2: < 600px - Two-line owner groups (player top, characters below) */
+@container players-list (max-width: 599px) {
+  .player-column {
+    flex-direction: column;
+    align-items: stretch;
+    /* Allow owner groups to sit side-by-side when possible */
+    flex: 0 1 auto;
+  }
+  
+  .player-row {
+    width: 100%;
+    max-width: none;
+  }
+  
+  .characters-row {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  
+  .character-cell {
+    flex: 1 1 auto;
+  }
+}
+
+/* Mode 3: < 400px - Vertical owner groups (groups stack, characters horizontal within group) */
+@container players-list (max-width: 399px) {
+  .players-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .player-column {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+  
+  .characters-row {
+    flex-wrap: wrap;
+  }
+}
+
+/* Mode 4: < 200px - Fully vertical (one entity per line) */
+@container players-list (max-width: 199px) {
+  .characters-row {
+    flex-direction: column;
+  }
+  
+  .character-cell {
+    width: 100%;
+    max-width: none;
+  }
+}
+
 
 /* Local player/character: yellow (not ready) -> green (ready) */
 .player-row.is-local.is-not-ready,
@@ -326,6 +420,7 @@ const readyCount = computed(() => {
   background: rgba(0, 0, 0, 0.05);
   border: 2px solid #ddd;
   border-radius: 4px;
+  min-width: 80px;
 }
 
 .empty-state {
@@ -348,43 +443,5 @@ const readyCount = computed(() => {
   font-weight: 700;
   color: #2e7d32;
   white-space: nowrap;
-}
-
-/* Responsive behavior */
-/* When space is very limited, stack characters vertically within each player column */
-@media (max-width: 768px) {
-  .players-container {
-    gap: 8px;
-  }
-  
-  .player-column {
-    min-width: 140px;
-    flex: 1 1 calc(50% - 4px);
-  }
-  
-  .characters-row {
-    flex-direction: column;
-  }
-  
-  .character-cell {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .players-list-horizontal {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-  
-  .player-column {
-    width: 100%;
-    flex: 1 1 100%;
-  }
-  
-  .players-summary {
-    width: 100%;
-  }
 }
 </style>
