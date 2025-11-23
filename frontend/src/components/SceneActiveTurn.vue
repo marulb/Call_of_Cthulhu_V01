@@ -1,7 +1,7 @@
 <template>
-  <div class="action-list">
+  <div class="active-turn">
     <div class="list-header">
-      <h3>Action List</h3>
+      <h3>Scene - Active Turn</h3>
       <button v-if="!showNewForm" @click="showNewForm = true" class="btn-add">+ New Action</button>
     </div>
 
@@ -289,7 +289,7 @@ function submitTurn() {
 </script>
 
 <style scoped>
-.action-list {
+.active-turn {
   display: flex;
   flex-direction: column;
   height: 100%;

@@ -20,11 +20,11 @@
     <div class="game-content">
       <div class="game-grid" :class="`layout-${layoutMode}`">
             <div class="grid-item turn" :style="{ gridArea: 'turn', height: areaHeightPx + 'px' }">
-              <TurnHistory :turns="turns" :characters="sessionStore.selectedCharacters" />
+              <SceneProgress :turns="turns" :characters="sessionStore.selectedCharacters" />
             </div>
 
             <div class="grid-item action" :style="{ gridArea: 'action', height: areaHeightPx + 'px' }">
-          <ActionList :drafts="actionDrafts" :characters="sessionStore.selectedCharacters" :players="allPlayers"
+          <SceneActiveTurn :drafts="actionDrafts" :characters="sessionStore.selectedCharacters" :players="allPlayers"
             :current-player-id="sessionStore.playerId || ''" :session-id="sessionStore.currentSession?.id || ''"
             @create-draft="handleCreateDraft" @update-draft="handleUpdateDraft" @delete-draft="handleDeleteDraft"
             @reorder-drafts="handleReorderDrafts" @submit-turn="handleSubmitTurn" />
@@ -51,8 +51,8 @@ import { useGameSessionStore } from '@/stores/gameSession'
 import { useSocket } from '@/composables/useSocket'
 import SessionInfoHeader from '@/components/SessionInfoHeader.vue'
 import PlayersList from '@/components/PlayersList.vue'
-import ActionList from '@/components/ActionList.vue'
-import TurnHistory from '@/components/TurnHistory.vue'
+import SceneActiveTurn from '@/components/SceneActiveTurn.vue'
+import SceneProgress from '@/components/SceneProgress.vue'
 import RealmChat from '@/components/RealmChat.vue'
 import ChatProphet from '@/components/ChatProphet.vue'
 import type { ActionDraft, Turn, ChatMessage } from '@/types/gameplay'

@@ -1,7 +1,7 @@
 <template>
-  <div class="turn-history">
+  <div class="scene-progress">
     <div class="list-header">
-      <h3>Turn History</h3>
+      <h3>Scene Progress</h3>
       <span class="turn-count">{{ turns.length }} turns</span>
     </div>
 
@@ -97,7 +97,7 @@ function formatStatus(status: string) {
 </script>
 
 <style scoped>
-.turn-history {
+.scene-progress {
   display: flex;
   flex-direction: column;
   height: 100%;

@@ -8,8 +8,12 @@ from .models import Turn, TurnCreate, Change, Meta, Reaction
 from .database import get_gamerecords_db
 from datetime import datetime
 import uuid
+import httpx
 
 router = APIRouter(prefix="/turns", tags=["turns"])
+
+# n8n webhook URL (from docker-compose network)
+N8N_WEBHOOK_URL = "http://n8n:5678/webhook/coc_orchestrator"
 
 
 @router.get("", response_model=List[Turn])
@@ -65,13 +69,19 @@ async def create_turn(turn_data: TurnCreate):
 
 @router.post("/{turn_id}/submit")
 async def submit_turn(turn_id: str, submitted_by: str):
-    """Submit turn for AI processing."""
+    """Submit turn for AI processing via DungeonMaster."""
     db = get_gamerecords_db()
 
-    result = await db.turns.update_one(
+    # Get the turn first
+    turn = await db.turns.find_one({"id": turn_id})
+    if not turn:
+        raise HTTPException(status_code=404, detail="Turn not found")
+
+    # Update status to processing
+    await db.turns.update_one(
         {"id": turn_id},
         {
-            "$set": {"status": "ready_for_agents"},
+            "$set": {"status": "processing"},
             "$push": {
                 "changes": {
                     "by": submitted_by,
@@ -82,12 +92,103 @@ async def submit_turn(turn_id: str, submitted_by: str):
         }
     )
 
-    if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Turn not found")
-
-    # TODO: Trigger Keeper AI processing here
-    # For now, return success
-    return {"message": "Turn submitted for processing", "turn_id": turn_id}
+    # Call DungeonMaster AI via n8n webhook
+    try:
+        payload = {"DungeonMaster": turn["actions"]}
+        
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                N8N_WEBHOOK_URL,
+                json=payload,
+                headers={"Content-Type": "application/json"}
+            )
+            
+            if response.status_code == 200:
+                n8n_data = response.json()
+                
+                # Extract description from n8n response
+                description = n8n_data.get("output", n8n_data.get("body", ""))
+                
+                if not description and isinstance(n8n_data, dict):
+                    description = (
+                        n8n_data.get("text") or 
+                        n8n_data.get("response") or 
+                        n8n_data.get("description") or
+                        "The Keeper observes in silence..."
+                    )
+                
+                # Try to extract a summary
+                summary = None
+                if description:
+                    sentences = description.split('. ')
+                    if len(sentences) > 1:
+                        summary = sentences[0] + '.'
+                    elif len(description) > 100:
+                        summary = description[:97] + '...'
+                
+                # Add reaction to turn
+                reaction = Reaction(description=description, summary=summary)
+                
+                await db.turns.update_one(
+                    {"id": turn_id},
+                    {
+                        "$set": {
+                            "reaction": reaction.dict(),
+                            "status": "completed"
+                        },
+                        "$push": {
+                            "changes": {
+                                "by": "DungeonMasterAI",
+                                "at": datetime.utcnow(),
+                                "type": "reaction_added"
+                            }
+                        }
+                    }
+                )
+                
+                return {
+                    "message": "Turn processed successfully",
+                    "turn_id": turn_id,
+                    "reaction": reaction.dict()
+                }
+            else:
+                # If n8n fails, mark as failed
+                await db.turns.update_one(
+                    {"id": turn_id},
+                    {"$set": {"status": "failed"}}
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"DungeonMaster AI returned status {response.status_code}"
+                )
+                
+    except httpx.TimeoutException:
+        await db.turns.update_one(
+            {"id": turn_id},
+            {"$set": {"status": "failed"}}
+        )
+        raise HTTPException(
+            status_code=504,
+            detail="Request to DungeonMaster AI timed out"
+        )
+    except httpx.RequestError as e:
+        await db.turns.update_one(
+            {"id": turn_id},
+            {"$set": {"status": "failed"}}
+        )
+        raise HTTPException(
+            status_code=503,
+            detail=f"Could not connect to DungeonMaster AI: {str(e)}"
+        )
+    except Exception as e:
+        await db.turns.update_one(
+            {"id": turn_id},
+            {"$set": {"status": "failed"}}
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing turn: {str(e)}"
+        )
 
 
 @router.patch("/{turn_id}/reaction")

@@ -58,6 +58,20 @@ class ProphetResponse(BaseModel):
     references: Optional[List[str]] = None
 
 
+class DungeonMasterRequest(BaseModel):
+    """Request for DungeonMaster AI (turn processing)."""
+    turn_id: str
+    scene_id: str
+    actions: List[dict]  # List of action drafts with character_id, speak, act, etc.
+    context: Optional[dict] = None
+
+
+class DungeonMasterResponse(BaseModel):
+    """Response from DungeonMaster AI."""
+    description: str
+    summary: Optional[str] = None
+
+
 # ============== KEEPER AI ENDPOINTS ==============
 
 @router.post("/keeper/process-turn", response_model=KeeperResponse)
@@ -279,6 +293,83 @@ async def ask_prophet_question(request: ProphetRequest):
         )
 
 
+# ============== DUNGEONMASTER AI ENDPOINTS (n8n integration) ==============
+
+@router.post("/dungeonmaster/process", response_model=DungeonMasterResponse)
+async def process_dungeonmaster_turn(request: DungeonMasterRequest):
+    """
+    DungeonMaster AI endpoint - processes player actions and generates scene narrative via n8n workflow.
+    
+    This endpoint:
+    1. Receives the full action list from players
+    2. Sends to n8n Keeper workflow with {"DungeonMaster": actions} format
+    3. Returns AI-generated scene description and summary
+    """
+    
+    try:
+        # Prepare payload for n8n webhook
+        payload = {"DungeonMaster": request.actions}
+        
+        # Call n8n webhook
+        async with httpx.AsyncClient(timeout=60.0) as client:  # Longer timeout for scene generation
+            response = await client.post(
+                N8N_WEBHOOK_URL,
+                json=payload,
+                headers={"Content-Type": "application/json"}
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"n8n webhook returned status {response.status_code}"
+                )
+            
+            # Parse n8n response
+            n8n_data = response.json()
+            
+            # Extract description from n8n response
+            description = n8n_data.get("output", n8n_data.get("body", ""))
+            
+            # If description is still empty, try to get it from nested structure
+            if not description and isinstance(n8n_data, dict):
+                description = (
+                    n8n_data.get("text") or 
+                    n8n_data.get("response") or 
+                    n8n_data.get("description") or
+                    str(n8n_data)
+                )
+            
+            # Try to extract a summary (first sentence or first 100 chars)
+            summary = None
+            if description:
+                sentences = description.split('. ')
+                if len(sentences) > 1:
+                    summary = sentences[0] + '.'
+                elif len(description) > 100:
+                    summary = description[:97] + '...'
+            
+            return DungeonMasterResponse(
+                description=description if description else "The Keeper observes in silence...",
+                summary=summary
+            )
+            
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=504,
+            detail="Request to DungeonMaster AI timed out"
+        )
+    except httpx.RequestError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Could not connect to DungeonMaster AI: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing DungeonMaster request: {str(e)}"
+        )
+
+
 # ============== AI STATUS ENDPOINTS ==============
 
 @router.get("/status")
@@ -294,6 +385,11 @@ async def ai_status():
             "message": "Using mock responses - will be replaced with n8n workflow"
         },
         "prophet_ai": {
+            "status": "active",
+            "message": "Connected to n8n Keeper workflow",
+            "webhook_url": N8N_WEBHOOK_URL
+        },
+        "dungeonmaster_ai": {
             "status": "active",
             "message": "Connected to n8n Keeper workflow",
             "webhook_url": N8N_WEBHOOK_URL
