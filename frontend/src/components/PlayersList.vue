@@ -1,107 +1,159 @@
 <template>
   <div class="players-list-horizontal">
     <div class="players-container">
+      <!-- Each player column -->
       <div
-        v-for="playerGroup in groupedPlayers"
-        :key="playerGroup.playerId"
-        class="player-group"
-        :class="{
-          offline: !playerGroup.online,
-          'is-master': playerGroup.playerId === masterPlayerId
-        }"
+        v-for="player in players"
+        :key="player.player_id"
+        class="player-column"
       >
-        <div class="player-header">
-          <span class="status-dot" :class="{ online: playerGroup.online }"></span>
-          <span class="player-name">{{ playerGroup.playerName }}</span>
-          <span v-if="playerGroup.playerId === masterPlayerId" class="master-badge">★</span>
-          <span v-if="playerGroup.ready" class="ready-badge">✓</span>
-        </div>
-        <div class="characters-list">
-          <span
-            v-for="(char, index) in playerGroup.characters"
-            :key="char.id"
-            class="character-name"
+        <!-- Player Row (Header) -->
+        <div class="player-row" :class="getPlayerClass(player)">
+          <span class="entity-name">{{ player.player_name }}</span>
+          <span v-if="player.player_id === masterPlayerId" class="master-badge">★</span>
+          <button
+            v-if="isLocalPlayer(player)"
+            class="ready-toggle"
+            :class="{ ready: isPlayerReady(player) }"
+            @click="togglePlayerReady(player)"
+            :title="isPlayerReady(player) ? 'Mark all as not ready' : 'Mark all as ready'"
           >
-            {{ char.name }}<span v-if="index < playerGroup.characters.length - 1">, </span>
-          </span>
-          <span v-if="playerGroup.characters.length === 0" class="no-characters">
+            <span class="led"></span>
+          </button>
+        </div>
+
+        <!-- Characters Row - responsive: horizontal first, then vertical -->
+        <div class="characters-row">
+          <div
+            v-for="char in player.characters"
+            :key="char.id"
+            class="character-cell"
+            :class="getCharacterClass(player, char)"
+          >
+            <span class="entity-name">{{ char.name }}</span>
+            <button
+              v-if="isLocalPlayer(player)"
+              class="ready-toggle"
+              :class="{ ready: char.ready }"
+              @click="toggleCharacterReady(player.player_id, char.id)"
+              :title="char.ready ? 'Mark as not ready' : 'Mark as ready'"
+            >
+              <span class="led"></span>
+            </button>
+          </div>
+          <div v-if="player.characters.length === 0" class="no-characters">
             (no characters)
-          </span>
+          </div>
         </div>
       </div>
 
-      <div v-if="groupedPlayers.length === 0" class="empty-state">
+      <div v-if="players.length === 0" class="empty-state">
         No players online
       </div>
     </div>
 
-    <div class="players-summary">
+    <!-- <div class="players-summary">
       <span class="summary-text">
-        {{ onlineCount }} online • {{ readyCount }} ready
+        {{ onlineCount }} online • {{ readyCount }}/{{ totalCharacters }} ready
       </span>
-    </div>
+    </div> -->
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 
+interface Character {
+  id: string
+  name: string
+  ready: boolean
+}
+
 interface Player {
   player_id: string
   player_name: string
-  character_name?: string
-  character_id?: string
   online: boolean
-  ready?: boolean
+  characters: Character[]
 }
 
 const props = defineProps<{
   players: Player[]
+  currentPlayerId: string
   masterPlayerId?: string
 }>()
 
-// Group players by player_id and collect their characters
-const groupedPlayers = computed(() => {
-  const playerMap = new Map<string, {
-    playerId: string
-    playerName: string
-    online: boolean
-    ready: boolean
-    characters: Array<{ id: string; name: string }>
-  }>()
+const emit = defineEmits<{
+  toggleReady: [playerId: string, characterId: string]
+}>()
 
-  props.players.forEach((player) => {
-    if (!playerMap.has(player.player_id)) {
-      playerMap.set(player.player_id, {
-        playerId: player.player_id,
-        playerName: player.player_name,
-        online: player.online,
-        ready: player.ready || false,
-        characters: []
-      })
-    }
+// Check if player is local (current user)
+const isLocalPlayer = (player: Player) => player.player_id === props.currentPlayerId
 
-    const group = playerMap.get(player.player_id)!
-    if (player.character_name && player.character_id) {
-      // Check if character already added
-      if (!group.characters.find(c => c.id === player.character_id)) {
-        group.characters.push({
-          id: player.character_id,
-          name: player.character_name
-        })
-      }
+// Check if all player's characters are ready (player ready = all characters ready)
+const isPlayerReady = (player: Player) => {
+  if (player.characters.length === 0) return false
+  return player.characters.every(c => c.ready)
+}
+
+// Get CSS class for player based on ready state and local/remote
+const getPlayerClass = (player: Player) => {
+  const isLocal = isLocalPlayer(player)
+  const ready = isPlayerReady(player)
+  
+  return {
+    'is-local': isLocal,
+    'is-remote': !isLocal,
+    'is-ready': ready,
+    'is-not-ready': !ready
+  }
+}
+
+// Get CSS class for character based on ready state and ownership
+const getCharacterClass = (player: Player, char: Character) => {
+  const isLocal = isLocalPlayer(player)
+  
+  return {
+    'is-local': isLocal,
+    'is-remote': !isLocal,
+    'is-ready': char.ready,
+    'is-not-ready': !char.ready
+  }
+}
+
+// Toggle ready state for all player's characters
+const togglePlayerReady = (player: Player) => {
+  const currentlyAllReady = isPlayerReady(player)
+  const newReadyState = !currentlyAllReady
+  
+  // Toggle all characters to the new state
+  player.characters.forEach(char => {
+    if (char.ready !== newReadyState) {
+      emit('toggleReady', player.player_id, char.id)
     }
   })
+}
 
-  return Array.from(playerMap.values())
-})
+// Toggle ready state for a single character
+const toggleCharacterReady = (playerId: string, characterId: string) => {
+  emit('toggleReady', playerId, characterId)
+}
 
 const onlineCount = computed(() => {
-  return groupedPlayers.value.filter((p) => p.online).length
+  return props.players.filter(p => p.online).length
+})
+
+const totalCharacters = computed(() => {
+  return props.players.reduce((sum, p) => sum + p.characters.length, 0)
 })
 
 const readyCount = computed(() => {
-  return groupedPlayers.value.filter((p) => p.online && p.ready).length
+  let count = 0
+  props.players.forEach(p => {
+    p.characters.forEach(c => {
+      if (c.ready) count++
+    })
+  })
+  return count
 })
 </script>
 
@@ -109,142 +161,230 @@ const readyCount = computed(() => {
 .players-list-horizontal {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
   width: 100%;
+  padding: 12px 16px;
+  background: #f5f5f5;
+  border-bottom: 2px solid #ddd;
 }
 
 .players-container {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 16px;
+  align-items: flex-start;
+  gap: 12px;
   flex: 1;
 }
 
-.player-group {
+/* Player Column - represents one player and their characters */
+.player-column {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: #f8f8f8;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  transition: all 0.2s;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
 }
 
-.player-group.is-master {
-  border-color: #ffd700;
-  background: #fffef0;
-}
-
-.player-group.offline {
-  opacity: 0.5;
-}
-
-.player-header {
+/* Player Row (Header) */
+.player-row {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ccc;
-  flex-shrink: 0;
-}
-
-.status-dot.online {
-  background: #4caf50;
-  box-shadow: 0 0 6px #4caf50;
-}
-
-.player-name {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 2px solid;
+  transition: all 0.2s;
+  min-height: 36px;
   font-weight: 700;
-  color: #333;
-  font-size: 14px;
   white-space: nowrap;
 }
 
+/* Characters Row - responsive container */
+.characters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+/* Character Cell */
+.character-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 2px solid;
+  border-radius: 4px;
+  transition: all 0.2s;
+  min-height: 30px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Local player/character: yellow (not ready) -> green (ready) */
+.player-row.is-local.is-not-ready,
+.character-cell.is-local.is-not-ready {
+  background-color: #fff9c4;
+  border-color: #f9a825;
+}
+
+.player-row.is-local.is-ready,
+.character-cell.is-local.is-ready {
+  background-color: #c8e6c9;
+  border-color: #4caf50;
+}
+
+/* Remote player/character: red (not ready) -> green (ready) */
+.player-row.is-remote.is-not-ready,
+.character-cell.is-remote.is-not-ready {
+  background-color: #ffcdd2;
+  border-color: #e57373;
+}
+
+.player-row.is-remote.is-ready,
+.character-cell.is-remote.is-ready {
+  background-color: #c8e6c9;
+  border-color: #4caf50;
+}
+
+.entity-name {
+  font-size: 13px;
+  color: #333;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-row .entity-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.character-cell .entity-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #555;
+}
+
+/* Master Badge */
 .master-badge {
-  background: #ffd700;
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
   color: #333;
   padding: 2px 6px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
-.ready-badge {
-  background: #4caf50;
-  color: white;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.characters-list {
+/* Ready Toggle Button (LED style) - only shown for local player/characters */
+.ready-toggle {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding-left: 8px;
-  border-left: 1px solid #ddd;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+  flex-shrink: 0;
 }
 
-.character-name {
-  font-size: 13px;
-  color: #666;
+.ready-toggle:hover {
+  transform: scale(1.2);
+}
+
+.ready-toggle .led {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid;
+  transition: all 0.2s;
+}
+
+/* LED colors: ALWAYS red or green (never yellow) */
+/* When entity is NOT ready -> LED is GREEN (click to mark ready) */
+.is-not-ready .ready-toggle .led {
+  background-color: #4caf50;
+  border-color: #2e7d32;
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.7);
+}
+
+/* When entity IS ready -> LED is RED (click to mark not ready) */
+.is-ready .ready-toggle .led {
+  background-color: #f44336;
+  border-color: #c62828;
+  box-shadow: 0 0 8px rgba(244, 67, 54, 0.7);
 }
 
 .no-characters {
-  font-size: 12px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: #999;
+  font-style: italic;
+  background: rgba(0, 0, 0, 0.05);
+  border: 2px solid #ddd;
+  border-radius: 4px;
+}
+
+.empty-state {
+  padding: 16px;
   color: #999;
   font-style: italic;
 }
 
-.empty-state {
-  color: #999;
-  font-size: 14px;
-  padding: 8px;
-}
-
 .players-summary {
-  display: flex;
-  align-items: center;
   padding: 8px 16px;
-  background: #6c63ff;
-  color: white;
-  border-radius: 8px;
-  white-space: nowrap;
+  background: white;
+  border-radius: 6px;
+  border: 2px solid #4caf50;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
 .summary-text {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
+  color: #2e7d32;
+  white-space: nowrap;
 }
 
+/* Responsive behavior */
+/* When space is very limited, stack characters vertically within each player column */
 @media (max-width: 768px) {
+  .players-container {
+    gap: 8px;
+  }
+  
+  .player-column {
+    min-width: 140px;
+    flex: 1 1 calc(50% - 4px);
+  }
+  
+  .characters-row {
+    flex-direction: column;
+  }
+  
+  .character-cell {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
   .players-list-horizontal {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
-
-  .players-container {
-    flex-direction: column;
-    align-items: stretch;
+  
+  .player-column {
+    width: 100%;
+    flex: 1 1 100%;
   }
-
-  .player-group {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .characters-list {
-    padding-left: 0;
-    border-left: none;
-    padding-top: 4px;
+  
+  .players-summary {
+    width: 100%;
   }
 }
 </style>

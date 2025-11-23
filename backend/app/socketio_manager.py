@@ -32,10 +32,17 @@ async def disconnect(sid):
 
     # Remove from active sessions
     for session_id, players in active_sessions.items():
-        for player_id, player_sid in list(players.items()):
-            if player_sid == sid:
+        for player_id, player_data in list(players.items()):
+            if isinstance(player_data, dict) and player_data.get('sid') == sid:
                 del players[player_id]
                 # Notify other players in session
+                await sio.emit('player_disconnected', {
+                    'player_id': player_id,
+                    'session_id': session_id
+                }, room=f"session:{session_id}")
+                break
+            elif player_data == sid:  # Legacy support
+                del players[player_id]
                 await sio.emit('player_disconnected', {
                     'player_id': player_id,
                     'session_id': session_id
@@ -57,10 +64,24 @@ async def join_session(sid, data):
     # Join session room
     await sio.enter_room(sid, f"session:{session_id}")
 
-    # Track player in session
+    # Track player in session with their info
     if session_id not in active_sessions:
         active_sessions[session_id] = {}
-    active_sessions[session_id][player_id] = sid
+    active_sessions[session_id][player_id] = {
+        'sid': sid,
+        'player_name': player_name,
+        'player_id': player_id
+    }
+
+    # Build full player list for broadcast
+    players_list = [
+        {
+            'player_id': pid,
+            'player_name': pdata['player_name'],
+            'online': True
+        }
+        for pid, pdata in active_sessions[session_id].items()
+    ]
 
     # Notify other players
     await sio.emit('player_joined', {
@@ -72,7 +93,7 @@ async def join_session(sid, data):
     # Send current session state to joining player
     await sio.emit('session_joined', {
         'session_id': session_id,
-        'players_online': list(active_sessions[session_id].keys())
+        'players_online': players_list
     }, to=sid)
 
 

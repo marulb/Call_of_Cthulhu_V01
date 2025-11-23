@@ -8,7 +8,12 @@
 
     <!-- Players List - Horizontal at top -->
     <div class="players-bar">
-      <PlayersList :players="playersWithDetails" :master-player-id="sessionStore.currentSession?.master_player_id" />
+      <PlayersList 
+        :players="playersWithDetails" 
+        :current-player-id="sessionStore.playerId || ''"
+        :master-player-id="sessionStore.currentSession?.master_player_id" 
+        @toggle-ready="handleToggleReady" 
+      />
     </div>
 
     <!-- Main Game Content -->
@@ -67,21 +72,35 @@ const rulesMessages = ref<any[]>([])
 const isWaitingForRulesResponse = ref(false)
 const currentChapter = ref<string>('')
 const currentScene = ref<any>(null)
+const allRealmCharacters = ref<any[]>([]) // All characters in the realm
+const characterReadyStates = ref<Map<string, boolean>>(new Map()) // character_id -> ready state
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8093'
 
+// Prepare player data with their characters for the PlayersList component
 const playersWithDetails = computed(() => {
+  console.log('Computing playersWithDetails...')
+  console.log('Players online:', socket.playersOnline.value)
+  console.log('All realm characters:', allRealmCharacters.value)
+  
   return socket.playersOnline.value.map((p) => {
-    const character = sessionStore.selectedCharacters.find(
-      (c: any) => c.controller?.owner === p.player_id
+    // Find all characters owned by this player
+    // IMPORTANT: controller.owner stores player NAME, not player_id
+    const playerCharacters = allRealmCharacters.value.filter(
+      (c: any) => c.controller?.owner === p.player_name
     )
+    
+    console.log(`Player ${p.player_name} characters:`, playerCharacters)
+    
     return {
-      ...p,
-      character_name: character?.name,
-      character_id: character?.id,
-      ready: actionDrafts.value.some(
-        (d: ActionDraft) => d.player_id === p.player_id && d.ready
-      )
+      player_id: p.player_id,
+      player_name: p.player_name,
+      online: p.online,
+      characters: playerCharacters.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        ready: characterReadyStates.value.get(c.id) || false
+      }))
     }
   })
 })
@@ -156,13 +175,19 @@ function setupSocketListeners() {
     actionDrafts.value = ordered
   })
 
+  // Ready state events
+  socket.onReadyStateChanged((data: { player_id: string; character_id: string; ready: boolean }) => {
+    characterReadyStates.value.set(data.character_id, data.ready)
+  })
+
   // Turn events
   socket.onTurnCompleted(async (data: { turn_id: string; reaction: any }) => {
     // Reload turns to get the updated turn with reaction
     await loadTurns()
 
-    // Clear action drafts after turn completion
+    // Clear action drafts and ready states after turn completion
     actionDrafts.value = []
+    characterReadyStates.value.clear()
   })
 
   // Chat events
@@ -182,6 +207,9 @@ function setupSocketListeners() {
 
 async function loadGameData() {
   try {
+    // Load all characters in the realm
+    await loadAllRealmCharacters()
+
     // Load current campaign's active chapter
     const campaignId = sessionStore.selectedCampaign?.id
     if (campaignId) {
@@ -208,6 +236,21 @@ async function loadGameData() {
     await loadActionDrafts()
   } catch (error) {
     console.error('Error loading game data:', error)
+  }
+}
+
+async function loadAllRealmCharacters() {
+  try {
+    const realmId = sessionStore.selectedRealm?.id
+    if (!realmId) return
+
+    const response = await fetch(`${API_BASE}/api/v1/characters?realm_id=${realmId}`)
+    if (response.ok) {
+      allRealmCharacters.value = await response.json()
+      console.log('Loaded realm characters:', allRealmCharacters.value)
+    }
+  } catch (error) {
+    console.error('Error loading realm characters:', error)
   }
 }
 
@@ -291,6 +334,23 @@ async function handleDeleteDraft(draftId: string) {
   } catch (error) {
     console.error('Error deleting draft:', error)
   }
+}
+
+// Handle ready state toggle
+function handleToggleReady(playerId: string, characterId: string) {
+  const currentState = characterReadyStates.value.get(characterId) || false
+  const newState = !currentState
+  
+  // Update local state
+  characterReadyStates.value.set(characterId, newState)
+  
+  // Broadcast to other players
+  socket.emitReadyStateChanged(
+    sessionStore.currentSession!.id,
+    playerId,
+    characterId,
+    newState
+  )
 }
 
 async function handleReorderDrafts(order: string[]) {
