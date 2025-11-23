@@ -7,7 +7,7 @@
       :is-connected="socket.connected.value" />
 
     <!-- Players List - Horizontal at top -->
-    <div class="players-bar">
+    <div class="players-bar" ref="playersBarRef">
       <PlayersList 
         :players="playersWithDetails" 
         :current-player-id="sessionStore.playerId || ''"
@@ -16,30 +16,26 @@
       />
     </div>
 
-    <!-- Main Game Content -->
+    <!-- Main Game Content: responsive grid controlled by BASE_BREAKPOINT -->
     <div class="game-content">
-      <!-- Top Row: Action List & Turn History -->
-      <div class="content-top">
-        <div class="action-list-container">
+      <div class="game-grid" :class="`layout-${layoutMode}`">
+            <div class="grid-item turn" :style="{ gridArea: 'turn', height: areaHeightPx + 'px' }">
+              <TurnHistory :turns="turns" :characters="sessionStore.selectedCharacters" />
+            </div>
+
+            <div class="grid-item action" :style="{ gridArea: 'action', height: areaHeightPx + 'px' }">
           <ActionList :drafts="actionDrafts" :characters="sessionStore.selectedCharacters" :players="allPlayers"
             :current-player-id="sessionStore.playerId || ''" :session-id="sessionStore.currentSession?.id || ''"
             @create-draft="handleCreateDraft" @update-draft="handleUpdateDraft" @delete-draft="handleDeleteDraft"
             @reorder-drafts="handleReorderDrafts" @submit-turn="handleSubmitTurn" />
         </div>
 
-        <div class="turn-history-container">
-          <TurnHistory :turns="turns" :characters="sessionStore.selectedCharacters" />
-        </div>
-      </div>
-
-      <!-- Bottom Row: Chats -->
-      <div class="content-bottom">
-        <div class="realm-chat-container">
+            <div class="grid-item realm" :style="{ gridArea: 'realm', height: areaHeightPx + 'px' }">
           <RealmChat :messages="realmMessages" :current-player-id="sessionStore.playerId || ''"
             :connected="socket.connected.value" @send-message="handleSendRealmMessage" />
         </div>
 
-        <div class="rules-chat-container">
+            <div class="grid-item rules" :style="{ gridArea: 'rules', height: areaHeightPx + 'px' }">
           <RulesChat :messages="rulesMessages" :connected="socket.connected.value"
             :is-waiting-for-response="isWaitingForRulesResponse" @send-message="handleSendRulesMessage" />
         </div>
@@ -76,6 +72,56 @@ const allRealmCharacters = ref<any[]>([]) // All characters in the realm
 const characterReadyStates = ref<Map<string, boolean>>(new Map()) // character_id -> ready state
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8093'
+
+// Single base breakpoint (px). Change this value to experiment with layouts.
+const BASE_BREAKPOINT = 600
+
+// Minimum area height for each grid item (px). If window height is larger, areas will expand.
+const MIN_AREA_HEIGHT = 400
+
+// Reactive width/height and layout mode derived from BASE_BREAKPOINT
+const windowWidth = ref<number>(typeof window !== 'undefined' ? window.innerWidth : 1200)
+const windowHeight = ref<number>(typeof window !== 'undefined' ? window.innerHeight : 800)
+const playersBarRef = ref<HTMLElement | null>(null)
+const playersBarHeight = ref<number>(0)
+
+function updateWidth() {
+  windowWidth.value = window.innerWidth
+  windowHeight.value = window.innerHeight
+  // Measure players bar height if available
+  if (playersBarRef.value) {
+    playersBarHeight.value = playersBarRef.value.offsetHeight
+  }
+}
+
+const layoutMode = computed(() => {
+  if (windowWidth.value <= BASE_BREAKPOINT) return 'small'
+  if (windowWidth.value <= BASE_BREAKPOINT * 2) return 'medium'
+  return 'large'
+})
+
+// Compute how many rows are visible based on layout mode
+const rowsCount = computed(() => (layoutMode.value === 'small' ? 4 : layoutMode.value === 'medium' ? 2 : 1))
+
+// Grid gap used in CSS (px) - must match .game-grid gap
+const GRID_GAP = 16
+
+// Compute available height for the grid (viewport minus players bar and outer paddings)
+const availableGridHeight = computed(() => {
+  // subtract playersBarHeight and some padding (game-content padding top+bottom = 32)
+  const padding = 32
+  const h = windowHeight.value - playersBarHeight.value - padding
+  return h > 0 ? h : 0
+})
+
+// Compute per-area height in px (each grid row gets this height). Ensure minimum MIN_AREA_HEIGHT.
+const areaHeightPx = computed(() => {
+  const rows = rowsCount.value
+  // subtract gaps between rows
+  const totalGaps = (rows - 1) * GRID_GAP
+  const per = Math.floor((availableGridHeight.value - totalGaps) / rows)
+  return Math.max(MIN_AREA_HEIGHT, per)
+})
 
 // Prepare player data with their characters for the PlayersList component
 const playersWithDetails = computed(() => {
@@ -123,6 +169,13 @@ const masterPlayerName = computed(() => {
 onMounted(async () => {
   console.log('GameView mounted')
 
+  // Start tracking window width for responsive layout
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', updateWidth)
+    // set initial value
+    updateWidth()
+  }
+
   // Connect to Socket.io
   if (sessionStore.currentSession && sessionStore.playerId && sessionStore.playerName) {
     socket.connect(
@@ -143,6 +196,9 @@ onUnmounted(() => {
   // Disconnect from Socket.io
   if (sessionStore.currentSession && sessionStore.playerId) {
     socket.disconnect(sessionStore.currentSession.id, sessionStore.playerId)
+  }
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', updateWidth)
   }
 })
 
@@ -510,49 +566,58 @@ function handleSendRulesMessage(message: string) {
   width: 100%;
 }
 
-.content-top {
+/* Grid container that will change layout based on computed layoutMode class */
+.game-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 16px;
-  height: 50vh;
-  min-height: 400px;
+  width: 100%;
+  align-items: start;
 }
 
-.action-list-container,
-.turn-history-container {
+/* Small: all stacked vertically (<= BASE_BREAKPOINT) */
+.layout-small {
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "turn"
+    "action"
+    "realm"
+    "rules";
+}
+
+/* Medium: two-by-two (<= BASE_BREAKPOINT * 2) */
+.layout-medium {
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "turn action"
+    "realm rules";
+}
+
+/* Large: all side-by-side */
+.layout-large {
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-areas: "turn action realm rules";
+}
+
+.grid-item {
   display: flex;
+  flex-direction: column;
+  min-height: 220px;
   overflow: hidden;
 }
 
-.content-bottom {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  height: 400px;
-  min-height: 350px;
+.grid-item.turn { grid-area: turn }
+.grid-item.action { grid-area: action }
+.grid-item.realm { grid-area: realm }
+.grid-item.rules { grid-area: rules }
+
+/* Ensure children stretch and keep internal scroll where needed */
+.grid-item > * {
+  flex: 1 1 auto;
+  min-height: 0; /* allow internal scroll */
 }
 
-.realm-chat-container,
-.rules-chat-container {
-  display: flex;
-  overflow: hidden;
-}
-
-@media (max-width: 1024px) {
-  .content-top,
-  .content-bottom {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-
-  .action-list-container,
-  .turn-history-container {
-    min-height: 400px;
-  }
-
-  .realm-chat-container,
-  .rules-chat-container {
-    height: 350px;
-  }
+/* sensible defaults for very small screens */
+@media (max-width: 480px) {
+  .grid-item { min-height: 180px }
 }
 </style>
