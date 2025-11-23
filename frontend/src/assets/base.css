@@ -45,6 +45,12 @@
   --color-heading: var(--vt-c-text-light-1);
   --color-text: var(--vt-c-text-light-1);
 
+  /* Scrollbar semantic variables (light mode) */
+  --color-scrollbar-track: var(--vt-c-divider-light-2);
+  --color-scrollbar-thumb: var(--vt-c-divider-light-1);
+  --color-scrollbar-thumb-hover: var(--vt-c-ink-green-light);
+  --color-scrollbar-corner: transparent;
+
   --section-gap: 160px;
 }
 
@@ -59,6 +65,12 @@
 
     --color-heading: var(--vt-c-text-dark-1);
     --color-text: var(--vt-c-text-dark-2);
+
+    /* Scrollbar semantic variables (dark mode) */
+    --color-scrollbar-track: var(--vt-c-divider-dark-2);
+    --color-scrollbar-thumb: var(--vt-c-divider-dark-1);
+    --color-scrollbar-thumb-hover: var(--vt-c-ink-green);
+    --color-scrollbar-corner: transparent;
   }
 }
 

@@ -390,6 +390,32 @@ function submitTurn() {
   padding: 12px;
 }
 
+/* Scrollbar styles for the actions container */
+.actions-container {
+  scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+  scrollbar-width: thin;
+}
+
+.actions-container::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.actions-container::-webkit-scrollbar-track {
+  background: var(--color-scrollbar-track);
+}
+
+.actions-container::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.actions-container::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+}
+
 .action-form {
   background: var(--color-background-soft);
   padding: 16px;

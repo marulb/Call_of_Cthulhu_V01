@@ -176,6 +176,32 @@ function formatStatus(status: string) {
   padding: 12px;
 }
 
+/* Scrollbar styles: WebKit + Firefox friendly */
+.turns-container {
+  scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+  scrollbar-width: thin;
+}
+
+.turns-container::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.turns-container::-webkit-scrollbar-track {
+  background: var(--color-scrollbar-track);
+}
+
+.turns-container::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.turns-container::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+}
+
 .turn-item {
   background: var(--color-background-soft);
   padding: 16px;
