@@ -5,7 +5,7 @@
       <span class="turn-count">{{ turns.length }} turns</span>
     </div>
 
-    <div class="turns-container">
+  <div class="turns-container" ref="container">
       <div v-for="turn in sortedTurns" :key="turn.id" class="turn-item">
         <div class="turn-header">
           <span class="turn-number">Turn {{ turn.order }}</span>
@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import type { Turn } from '@/types/gameplay'
 
 interface Character {
@@ -73,8 +73,40 @@ const props = defineProps<{
 }>()
 
 const sortedTurns = computed(() => {
-  return [...props.turns].sort((a, b) => b.order - a.order) // Most recent first
+  // Chronological order: oldest turns first, newest appended at the bottom
+  return [...props.turns].sort((a, b) => a.order - b.order)
 })
+
+// Reference to the scrollable container so we can control scroll position
+const container = ref<HTMLElement | null>(null)
+
+// Watch for new turns being added and scroll the container so the newest turn
+// (which is rendered at the bottom) appears at the top of the visible area.
+watch(
+  () => props.turns.length,
+  async (newLen, oldLen) => {
+    try {
+      if ((oldLen ?? 0) === undefined) return
+      if (newLen > (oldLen ?? 0)) {
+        // wait for DOM to update
+        await nextTick()
+
+        if (!container.value) return
+        const items = container.value.querySelectorAll('.turn-item')
+        if (!items || items.length === 0) return
+        const last = items[items.length - 1] as HTMLElement | undefined
+        if (container.value) {
+          // Always scroll to bottom so the newest turn (appended at bottom) is visible.
+          // Use scrollHeight to ensure full content height is used.
+          container.value.scrollTop = container.value.scrollHeight
+        }
+      }
+    } catch (err) {
+      // swallow any scrolling errors to avoid breaking UI
+      console.warn('SceneProgress: scroll after new turn failed', err)
+    }
+  }
+)
 
 function getCharacterName(characterId: string) {
   return props.characters.find((c) => c.id === characterId)?.name || 'Unknown'
