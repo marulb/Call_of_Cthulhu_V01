@@ -168,6 +168,9 @@ const readyCount = computed(() => {
   border-bottom: 2px solid #ddd;
   container-type: inline-size;
   container-name: players-list;
+  /* Centralized entity sizing constants (change here to affect all entity widths) */
+  --entity-min: 80px;
+  --entity-max: 160px;
 }
 
 .players-container {
@@ -176,6 +179,8 @@ const readyCount = computed(() => {
   flex: 1;
   align-items: flex-start;
   flex-wrap: wrap;
+  /* Spread owner-groups across available width in wide mode */
+  justify-content: space-between;
 }
 
 /* 
@@ -189,9 +194,9 @@ const readyCount = computed(() => {
   /* Mode 1 (widest): flex-direction: row - player and characters side-by-side */
   flex-direction: row;
   align-items: center;
-  /* Flexible sizing: grow/shrink between 80-160px per entity */
+  /* Flexible sizing: grow/shrink between var(--entity-min) and var(--entity-max) per entity */
   flex: 1 1 auto;
-  min-width: 80px;
+  min-width: var(--entity-min);
 }
 
 /* Player Row (entity) */
@@ -207,10 +212,10 @@ const readyCount = computed(() => {
   font-weight: 700;
   white-space: nowrap;
   box-sizing: border-box;
-  /* Flexible width between 80-160px */
+  /* Flexible width between var(--entity-min) and var(--entity-max) */
   flex: 1 1 auto;
-  min-width: 80px;
-  max-width: 160px;
+  min-width: var(--entity-min);
+  max-width: var(--entity-max);
 }
 
 /* Characters container */
@@ -234,10 +239,10 @@ const readyCount = computed(() => {
   font-weight: 500;
   white-space: nowrap;
   box-sizing: border-box;
-  /* Flexible width between 80-160px */
+  /* Flexible width between var(--entity-min) and var(--entity-max) */
   flex: 1 1 auto;
-  min-width: 80px;
-  max-width: 160px;
+  min-width: var(--entity-min);
+  max-width: var(--entity-max);
 }
 
 /* 
@@ -267,6 +272,10 @@ const readyCount = computed(() => {
     /* Allow owner groups to sit side-by-side when possible */
     flex: 0 1 auto;
   }
+  /* In two-line mode keep groups left-aligned so wrapping is predictable */
+  .players-container {
+    justify-content: flex-start;
+  }
   
   .player-row {
     width: 100%;
@@ -288,6 +297,7 @@ const readyCount = computed(() => {
   .players-container {
     flex-direction: column;
     align-items: stretch;
+    justify-content: flex-start;
   }
   
   .player-column {
@@ -309,6 +319,9 @@ const readyCount = computed(() => {
   .character-cell {
     width: 100%;
     max-width: none;
+  }
+  .players-container {
+    justify-content: flex-start;
   }
 }
 
