@@ -164,7 +164,10 @@ interface Player {
 
 const props = defineProps<{
   drafts: ActionDraft[]
+  // characters used for the creation dropdown (usually current player's selected characters)
   characters: Character[]
+  // full list of characters in the realm (used to resolve names for actions from other players)
+  allCharacters?: Character[]
   players: Player[]
   currentPlayerId: string
   sessionId: string
@@ -215,7 +218,18 @@ const canReorderDrafts = computed(() => {
 })
 
 function getCharacterName(characterId: string) {
-  return props.characters.find((c) => c.id === characterId)?.name || 'Unknown'
+  // First try the local characters prop (used for the current player's selectable characters)
+  const foundLocal = props.characters.find((c) => c.id === characterId)
+  if (foundLocal) return foundLocal.name
+
+  // If not found, fall back to the full list of realm characters passed via allCharacters
+  if (props.allCharacters) {
+    const found = props.allCharacters.find((c) => c.id === characterId)
+    if (found) return found.name
+  }
+
+  // As a last fallback, return Unknown
+  return 'Unknown'
 }
 
 function getPlayerName(playerId: string) {

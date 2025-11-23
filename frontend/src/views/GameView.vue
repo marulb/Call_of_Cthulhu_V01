@@ -24,7 +24,7 @@
             </div>
 
             <div class="grid-item action" :style="{ gridArea: 'action', height: areaHeightPx + 'px' }">
-          <SceneActiveTurn :drafts="actionDrafts" :characters="sessionStore.selectedCharacters" :players="allPlayers"
+          <SceneActiveTurn :drafts="actionDrafts" :characters="sessionStore.selectedCharacters" :all-characters="allRealmCharacters" :players="allPlayers"
             :current-player-id="sessionStore.playerId || ''" :session-id="sessionStore.currentSession?.id || ''"
             @create-draft="handleCreateDraft" @update-draft="handleUpdateDraft" @delete-draft="handleDeleteDraft"
             @reorder-drafts="handleReorderDrafts" @submit-turn="handleSubmitTurn"
