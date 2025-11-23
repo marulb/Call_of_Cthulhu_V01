@@ -358,7 +358,7 @@ h2 {
 .navigation-buttons {
   display: flex;
   gap: 12px;
-  justify-content: space-between;
+  justify-content: center;
   margin-top: 20px;
 }
 
@@ -376,7 +376,6 @@ h2 {
 .btn-primary {
   background: #4a90e2;
   color: white;
-  flex: 1;
 }
 
 .btn-primary:hover:not(:disabled) {

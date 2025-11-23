@@ -447,7 +447,7 @@ function handleSendRulesMessage(message: string) {
   flex-direction: column;
   gap: 16px;
   padding: 16px;
-  max-width: 100%;
+  width: 100%;
 }
 
 .content-top {
@@ -478,8 +478,9 @@ function handleSendRulesMessage(message: string) {
   overflow: hidden;
 }
 
-@media (max-width: 1200px) {
-  .content-top {
+@media (max-width: 1024px) {
+  .content-top,
+  .content-bottom {
     grid-template-columns: 1fr;
     height: auto;
   }
@@ -487,13 +488,6 @@ function handleSendRulesMessage(message: string) {
   .action-list-container,
   .turn-history-container {
     min-height: 400px;
-  }
-}
-
-@media (max-width: 768px) {
-  .content-bottom {
-    grid-template-columns: 1fr;
-    height: auto;
   }
 
   .realm-chat-container,
