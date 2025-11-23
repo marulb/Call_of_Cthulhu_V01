@@ -176,7 +176,11 @@ const emit = defineEmits<{
   deleteDraft: [draftId: string]
   reorderDrafts: [order: string[]]
   submitTurn: []
+  dungeonmasterResponse: [response: any]
 }>()
+
+// n8n webhook (frontend/dev-accessible). Prefer setting VITE_N8N_WEBHOOK in env for prod/dev.
+const N8N_WEBHOOK = import.meta.env.VITE_N8N_WEBHOOK || 'http://localhost:5693/webhook/coc_orchestrator'
 
 const showNewForm = ref(false)
 const newAction = ref({
@@ -282,9 +286,52 @@ function handleDrop(dropIndex: number) {
 }
 
 function submitTurn() {
-  if (confirm('Submit turn? All players will need to be ready first.')) {
-    emit('submitTurn')
+  // all are ready, then submit directly otherwise confirm
+  if (!allActionsReady.value && !confirm('Not all players are ready. Do you want to end the turn anyways?')) {
+    return
   }
+
+  // Build ordered actions payload from sorted drafts
+  const actions = sortedDrafts.value.map((d) => ({
+    actor_id: d.character_id,
+    player_id: d.player_id,
+    speak: d.speak,
+    act: d.act,
+    appearance: d.appearance,
+    emotion: d.emotion,
+    ooc: d.ooc,
+    order: d.order
+  }))
+
+  // Send directly to n8n webhook with ActiveTurn payload
+  fetch(N8N_WEBHOOK, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ActiveTurn: actions })
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      // Try to extract a description from returned payload
+      let description = data?.output || data?.body || data?.text || data?.response || ''
+      if (!description && typeof data === 'object') {
+        // fallback: stringify
+        description = JSON.stringify(data)
+      }
+
+      // Try to extract summary
+      let summary = undefined
+      if (description) {
+        const sentences = description.split('. ')
+        if (sentences.length > 1) summary = sentences[0] + '.'
+        else if (description.length > 100) summary = description.slice(0, 97) + '...'
+      }
+
+      emit('dungeonmasterResponse', { description, summary, actions })
+    })
+    .catch((err) => {
+      console.error('Error calling DungeonMaster webhook:', err)
+      emit('dungeonmasterResponse', { error: err?.message || String(err), actions })
+    })
 }
 </script>
 

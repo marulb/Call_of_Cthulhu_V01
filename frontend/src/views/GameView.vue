@@ -27,7 +27,8 @@
           <SceneActiveTurn :drafts="actionDrafts" :characters="sessionStore.selectedCharacters" :players="allPlayers"
             :current-player-id="sessionStore.playerId || ''" :session-id="sessionStore.currentSession?.id || ''"
             @create-draft="handleCreateDraft" @update-draft="handleUpdateDraft" @delete-draft="handleDeleteDraft"
-            @reorder-drafts="handleReorderDrafts" @submit-turn="handleSubmitTurn" />
+            @reorder-drafts="handleReorderDrafts" @submit-turn="handleSubmitTurn"
+            @dungeonmasterResponse="handleDungeonmasterResponse" />
         </div>
 
             <div class="grid-item realm" :style="{ gridArea: 'realm', height: areaHeightPx + 'px' }">
@@ -35,10 +36,10 @@
             :connected="socket.connected.value" @send-message="handleSendRealmMessage" />
         </div>
 
-            <div class="grid-item rules" :style="{ gridArea: 'rules', height: areaHeightPx + 'px' }">
-          <ChatProphet :messages="prophetMessages" :connected="socket.connected.value"
-            :is-waiting-for-response="isWaitingForProphetResponse" @send-message="handleSendProphetMessage" />
-        </div>
+                    <div class="grid-item rules" :style="{ gridArea: 'rules', height: areaHeightPx + 'px' }">
+                  <ProphetChat :messages="prophetMessages" :connected="socket.connected.value"
+                    :is-waiting-for-response="isWaitingForProphetResponse" @send-message="handleSendProphetMessage" />
+                </div>
       </div>
     </div>
   </div>
@@ -54,7 +55,7 @@ import PlayersList from '@/components/PlayersList.vue'
 import SceneActiveTurn from '@/components/SceneActiveTurn.vue'
 import SceneProgress from '@/components/SceneProgress.vue'
 import RealmChat from '@/components/RealmChat.vue'
-import ChatProphet from '@/components/ChatProphet.vue'
+import ProphetChat from '@/components/ProphetChat.vue'
 import type { ActionDraft, Turn, ChatMessage } from '@/types/gameplay'
 
 const router = useRouter()
@@ -251,7 +252,7 @@ function setupSocketListeners() {
     realmMessages.value.push(message)
   })
 
-  socket.onRulesChatResponse((data: { message: string; timestamp: string }) => {
+  socket.onProphetChatResponse((data: { message: string; timestamp: string }) => {
     prophetMessages.value.push({
       message: data.message,
       isAi: true,
@@ -487,6 +488,57 @@ async function handleSubmitTurn() {
   } catch (error) {
     console.error('Error submitting turn:', error)
     alert('Failed to submit turn. Please try again.')
+  }
+}
+
+// Handler for direct DungeonMaster responses emitted by SceneActiveTurn
+async function handleDungeonmasterResponse(payload: any) {
+  try {
+    const description = payload.description || payload.error || 'No response from Keeper'
+    const summary = payload.summary
+
+    const actions = payload.actions || actionDrafts.value.map((draft) => ({
+      actor_id: draft.character_id,
+      speak: draft.speak,
+      act: draft.act,
+      appearance: draft.appearance,
+      emotion: draft.emotion,
+      ooc: draft.ooc
+    }))
+
+    // Create a local turn object to display the scene progress immediately
+    const newTurn: any = {
+      id: `local-${Date.now()}`,
+      scene_id: currentScene.value?.id || null,
+      order: turns.value.length + 1,
+      actions,
+      status: 'completed',
+      reaction: {
+        description,
+        summary
+      },
+      meta: { created_by: sessionStore.playerId }
+    }
+
+    // Push to UI
+    turns.value.push(newTurn)
+
+    // Clear local drafts and notify backend to clear session drafts if possible
+    actionDrafts.value = []
+    try {
+      await fetch(`${API_BASE}/api/v1/action-drafts/session/${sessionStore.currentSession!.id}/clear`, {
+        method: 'DELETE'
+      })
+    } catch (e) {
+      console.warn('Could not clear action drafts on backend:', e)
+    }
+
+    // Broadcast turn submission so other clients can update
+    if (sessionStore.currentSession) {
+      socket.emitTurnSubmitted(sessionStore.currentSession.id, newTurn.id)
+    }
+  } catch (err) {
+    console.error('Error handling dungeonmaster response:', err)
   }
 }
 

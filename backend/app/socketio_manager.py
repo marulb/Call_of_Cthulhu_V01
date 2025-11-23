@@ -238,16 +238,16 @@ async def realm_chat_message(sid, data):
 
 
 @sio.event
-async def rules_chat_message(sid, data):
-    """Handle private rules chat message (to AI, then back to player)."""
+async def prophet_chat_message(sid, data):
+    """Handle private Prophet chat messages (to AI, then back to player)."""
     player_id = data.get('player_id')
     message = data.get('message')
 
-    # TODO: Send to Rules AI agent
-    # For now, echo back with mock response
+    # TODO: Forward to Prophet AI agent / n8n workflow
+    # For now, echo back with a mock Prophet response
     if message:
-        await sio.emit('rules_chat_response', {
-            'message': f"Rules AI (mock): You asked about '{message[:50]}...'",
+        await sio.emit('prophet_chat_response', {
+            'message': f"Prophet (mock): You asked about '{message[:50]}...'",
             'timestamp': data.get('timestamp')
         }, to=sid)
 

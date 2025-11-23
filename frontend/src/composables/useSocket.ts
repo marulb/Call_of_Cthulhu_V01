@@ -148,8 +148,8 @@ export function useSocket() {
     })
   }
 
-  function emitRulesChatMessage(playerId: string, message: string, timestamp: string) {
-    socket.value?.emit('rules_chat_message', {
+  function emitProphetChatMessage(playerId: string, message: string, timestamp: string) {
+    socket.value?.emit('prophet_chat_message', {
       player_id: playerId,
       message,
       timestamp
@@ -191,8 +191,8 @@ export function useSocket() {
     socket.value?.on('realm_chat_message', callback)
   }
 
-  function onRulesChatResponse(callback: (data: { message: string; timestamp: string }) => void) {
-    socket.value?.on('rules_chat_response', callback)
+  function onProphetChatResponse(callback: (data: { message: string; timestamp: string }) => void) {
+    socket.value?.on('prophet_chat_response', callback)
   }
 
   function onMasterTransferred(
@@ -214,7 +214,7 @@ export function useSocket() {
     emitReadyStateChanged,
     emitTurnSubmitted,
     emitRealmChatMessage,
-    emitRulesChatMessage,
+  emitProphetChatMessage,
     onActionDraftCreated,
     onActionDraftUpdated,
     onActionDraftDeleted,
@@ -223,7 +223,7 @@ export function useSocket() {
     onTurnSubmitted,
     onTurnCompleted,
     onRealmChatMessage,
-    onRulesChatResponse,
+  onProphetChatResponse,
     onMasterTransferred
   }
 }

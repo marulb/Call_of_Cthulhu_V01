@@ -126,6 +126,7 @@ watch(
 </script>
 
 <style scoped>
+/* Same styles as original ChatProphet component */
 .prophet-chat {
   display: flex;
   flex-direction: column;
