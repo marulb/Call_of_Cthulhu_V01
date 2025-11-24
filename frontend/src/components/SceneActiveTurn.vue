@@ -182,8 +182,8 @@ const emit = defineEmits<{
   dungeonmasterResponse: [response: any]
 }>()
 
-// n8n webhook (frontend/dev-accessible). Prefer setting VITE_N8N_WEBHOOK in env for prod/dev.
-const N8N_WEBHOOK = import.meta.env.VITE_N8N_WEBHOOK || 'http://localhost:5693/webhook/coc_orchestrator'
+// n8n webhook for dungeonmaster (SceneActiveTurn actions)
+const N8N_DUNGEONMASTER_WEBHOOK = import.meta.env.VITE_N8N_DUNGEONMASTER_WEBHOOK || 'http://localhost:5693/webhook/coc_dungeonmaster'
 
 const showNewForm = ref(false)
 const newAction = ref({
@@ -317,8 +317,8 @@ function submitTurn() {
     order: d.order
   }))
 
-  // Send directly to n8n webhook with ActiveTurn payload
-  fetch(N8N_WEBHOOK, {
+  // Send directly to n8n dungeonmaster webhook with ActiveTurn payload
+  fetch(N8N_DUNGEONMASTER_WEBHOOK, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ActiveTurn: actions })

@@ -12,8 +12,8 @@ import httpx
 
 router = APIRouter(prefix="/turns", tags=["turns"])
 
-# n8n webhook URL (from docker-compose network)
-N8N_WEBHOOK_URL = "http://n8n:5678/webhook/coc_orchestrator"
+# n8n dungeonmaster webhook URL (from docker-compose network) 
+N8N_DUNGEONMASTER_WEBHOOK_URL = "http://n8n:5678/webhook/coc_dungeonmaster"
 
 
 @router.get("", response_model=List[Turn])
@@ -98,7 +98,7 @@ async def submit_turn(turn_id: str, submitted_by: str):
         
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
-                N8N_WEBHOOK_URL,
+                N8N_DUNGEONMASTER_WEBHOOK_URL,
                 json=payload,
                 headers={"Content-Type": "application/json"}
             )

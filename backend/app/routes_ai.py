@@ -11,8 +11,9 @@ import httpx
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
-# n8n webhook URL (from docker-compose network)
-N8N_WEBHOOK_URL = "http://n8n:5678/webhook/coc_orchestrator"
+# n8n webhook URLs (from docker-compose network)
+N8N_PROPHET_WEBHOOK_URL = "http://n8n:5678/webhook/coc_prophet"
+N8N_DUNGEONMASTER_WEBHOOK_URL = "http://n8n:5678/webhook/coc_dungeonmaster"
 
 
 class KeeperRequest(BaseModel):
@@ -241,10 +242,10 @@ async def ask_prophet_question(request: ProphetRequest):
         # Prepare payload for n8n webhook
         payload = {"Prophet": request.question}
         
-        # Call n8n webhook
+        # Call n8n prophet webhook
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
-                N8N_WEBHOOK_URL,
+                N8N_PROPHET_WEBHOOK_URL,
                 json=payload,
                 headers={"Content-Type": "application/json"}
             )
@@ -310,10 +311,10 @@ async def process_dungeonmaster_turn(request: DungeonMasterRequest):
         # Prepare payload for n8n webhook
         payload = {"DungeonMaster": request.actions}
         
-        # Call n8n webhook
+        # Call n8n dungeonmaster webhook
         async with httpx.AsyncClient(timeout=60.0) as client:  # Longer timeout for scene generation
             response = await client.post(
-                N8N_WEBHOOK_URL,
+                N8N_DUNGEONMASTER_WEBHOOK_URL,
                 json=payload,
                 headers={"Content-Type": "application/json"}
             )
@@ -386,13 +387,13 @@ async def ai_status():
         },
         "prophet_ai": {
             "status": "active",
-            "message": "Connected to n8n Keeper workflow",
-            "webhook_url": N8N_WEBHOOK_URL
+            "message": "Connected to n8n Prophet workflow",
+            "webhook_url": N8N_PROPHET_WEBHOOK_URL
         },
         "dungeonmaster_ai": {
             "status": "active",
-            "message": "Connected to n8n Keeper workflow",
-            "webhook_url": N8N_WEBHOOK_URL
+            "message": "Connected to n8n DungeonMaster workflow",
+            "webhook_url": N8N_DUNGEONMASTER_WEBHOOK_URL
         },
         "timestamp": datetime.utcnow().isoformat()
     }

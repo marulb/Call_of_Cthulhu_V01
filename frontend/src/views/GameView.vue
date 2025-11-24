@@ -565,8 +565,11 @@ function handleSendProphetMessage(message: string) {
   prophetMessages.value.push(userMessage)
   isWaitingForProphetResponse.value = true
 
-  // Call new Prophet endpoint (via n8n)
-  fetch(`${API_BASE}/api/v1/ai/prophet/ask`, {
+  // n8n prophet webhook
+  const N8N_PROPHET_WEBHOOK = import.meta.env.VITE_N8N_PROPHET_WEBHOOK || 'http://localhost:5693/webhook/coc_prophet'
+
+  // Call prophet webhook directly
+  fetch(N8N_PROPHET_WEBHOOK, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -576,11 +579,13 @@ function handleSendProphetMessage(message: string) {
   })
     .then((res) => res.json())
     .then((data) => {
+      // Extract response from n8n workflow output
+      const responseText = data?.output || data?.text || data?.response || 'No response from Prophet'
       prophetMessages.value.push({
-        message: data.answer,
+        message: responseText,
         isAi: true,
         timestamp: new Date().toISOString(),
-        references: data.references
+        references: data.references || []
       })
       isWaitingForProphetResponse.value = false
     })
