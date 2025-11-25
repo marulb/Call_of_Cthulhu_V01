@@ -29,13 +29,15 @@
             :key="char.id"
             class="character-cell"
             :class="getCharacterClass(player, char)"
+            @dblclick="handleCharacterDoubleClick(char.id)"
+            :title="'Double-click to view/edit character sheet'"
           >
             <span class="entity-name">{{ char.name }}</span>
             <button
               v-if="isLocalPlayer(player)"
               class="ready-toggle"
               :class="{ ready: char.ready }"
-              @click="toggleCharacterReady(player.player_id, char.id)"
+              @click.stop="toggleCharacterReady(player.player_id, char.id)"
               :title="char.ready ? 'Mark as not ready' : 'Mark as ready'"
             >
               <span class="led"></span>
@@ -84,6 +86,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   toggleReady: [playerId: string, characterId: string]
+  characterDoubleClick: [characterId: string]
 }>()
 
 // Check if player is local (current user)
@@ -136,6 +139,11 @@ const togglePlayerReady = (player: Player) => {
 // Toggle ready state for a single character
 const toggleCharacterReady = (playerId: string, characterId: string) => {
   emit('toggleReady', playerId, characterId)
+}
+
+// Handle character double-click to open character sheet
+const handleCharacterDoubleClick = (characterId: string) => {
+  emit('characterDoubleClick', characterId)
 }
 
 const onlineCount = computed(() => {
@@ -248,10 +256,16 @@ const readyCount = computed(() => {
   font-weight: 500;
   white-space: nowrap;
   box-sizing: border-box;
+  cursor: pointer;
   /* Flexible width between var(--entity-min) and var(--entity-max) */
   flex: 1 1 auto;
   min-width: var(--entity-min);
   max-width: var(--entity-max);
+}
+
+.character-cell:hover {
+  opacity: 0.8;
+  transform: translateY(-1px);
 }
 
 /* 

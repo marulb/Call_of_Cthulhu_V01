@@ -313,3 +313,334 @@ Locations are assigned to a Realm and can be reused across multiple Campaigns (e
   ]
 }
 ```
+
+## Character sheet
+```json
+{
+  "investigator": {
+    "name": "",
+    "birthplace": "",
+    "pronoun": "",
+    "occupation": "",
+    "residence": "",
+    "age": ""
+  },
+  "characteristics": {
+    "STR": {
+      "reg": ""
+    },
+    "CON": {
+      "reg": ""
+    },
+    "DEX": {
+      "reg": ""
+    },
+    "APP": {
+      "reg": ""
+    },
+    "INT": {
+      "reg": ""
+    },
+    "POW": {
+      "reg": ""
+    },
+    "SIZ": {
+      "reg": ""
+    },
+    "EDU": {
+      "reg": ""
+    }
+  },
+  "hit_points": {
+    "max": "",
+    "current": ""
+  },
+  "magic_points": {
+    "max": "",
+    "current": ""
+  },
+  "luck": {
+    "starting": "",
+    "current": ""
+  },
+  "sanity": {
+    "max": "",
+    "current": "",
+    "insane": ""
+  },
+  "status": {
+    "temporary_insanity": false,
+    "indefinite_insanity": false,
+    "major_wound": false,
+    "unconscious": false,
+    "dying": false
+  },
+  "skills": {
+    "Accounting": {
+      "base": "05",
+      "reg": "",
+      "used": false
+    },
+    "Anthropology": {
+      "base": "01",
+      "reg": "",
+      "used": false
+    },
+    "Appraise": {
+      "base": "05",
+      "reg": "",
+      "used": false
+    },
+    "Archaeology": {
+      "base": "01",
+      "reg": "",
+      "used": false
+    },
+    "Art/Craft": {
+      "base": "05",
+      "reg": "",
+      "used": false
+    },
+    "Charm": {
+      "base": "15",
+      "reg": "",
+      "used": false
+    },
+    "Climb": {
+      "base": "20",
+      "reg": "",
+      "used": false
+    },
+    "Credit Rating": {
+      "base": "00",
+      "reg": "",
+      "used": false
+    },
+    "Cthulhu Mythos": {
+      "base": "00",
+      "reg": "",
+      "used": false
+    },
+    "Disguise": {
+      "base": "05",
+      "reg": "",
+      "used": false
+    },
+    "Dodge": {
+      "base": "DEX/2",
+      "reg": "",
+      "used": false
+    },
+    "Drive Auto": {
+      "base": "20",
+      "reg": "",
+      "used": false
+    },
+    "Elec. Repair": {
+      "base": "10",
+      "reg": "",
+      "used": false
+    },
+    "Fast Talk": {
+      "base": "05",
+      "reg": "",
+      "used": false
+    },
+    "Fighting (Brawl)": {
+      "base": "25",
+      "reg": "",
+      "used": false
+    },
+    "Firearms (Handgun)": {
+      "base": "20",
+      "reg": "",
+      "used": false
+    },
+    "Firearms (Rifle/Shotgun)": {
+      "base": "25",
+      "reg": "",
+      "used": false
+    },
+    "First Aid": {
+      "base": "30",
+      "reg": "",
+      "used": false
+    },
+    "History": {
+      "base": "05",
+      "reg": "",
+      "used": false
+    },
+    "Intimidate": {
+      "base": "15",
+      "reg": "",
+      "used": false
+    },
+    "Jump": {
+      "base": "20",
+      "reg": "",
+      "used": false
+    },
+    "Language (Own)": {
+      "base": "EDU",
+      "reg": "",
+      "used": false
+    },
+    "Language": {
+      "base": "01",
+      "reg": "",
+      "used": false
+    },
+    "Law": {
+      "base": "05",
+      "reg": "",
+      "used": false
+    },
+    "Library Use": {
+      "base": "20",
+      "reg": "",
+      "used": false
+    },
+    "Listen": {
+      "base": "20",
+      "reg": "",
+      "used": false
+    },
+    "Locksmith": {
+      "base": "01",
+      "reg": "",
+      "used": false
+    },
+    "Mech. Repair": {
+      "base": "10",
+      "reg": "",
+      "used": false
+    },
+    "Medicine": {
+      "base": "01",
+      "reg": "",
+      "used": false
+    },
+    "Natural World": {
+      "base": "10",
+      "reg": "",
+      "used": false
+    },
+    "Navigate": {
+      "base": "10",
+      "reg": "",
+      "used": false
+    },
+    "Occult": {
+      "base": "05",
+      "reg": "",
+      "used": false
+    },
+    "Persuade": {
+      "base": "10",
+      "reg": "",
+      "used": false
+    },
+    "Pilot": {
+      "base": "01",
+      "reg": "",
+      "used": false
+    },
+    "Psychoanalysis": {
+      "base": "01",
+      "reg": "",
+      "used": false
+    },
+    "Psychology": {
+      "base": "10",
+      "reg": "",
+      "used": false
+    },
+    "Ride": {
+      "base": "05",
+      "reg": "",
+      "used": false
+    },
+    "Science": {
+      "base": "01",
+      "reg": "",
+      "used": false
+    },
+    "Sleight of Hand": {
+      "base": "10",
+      "reg": "",
+      "used": false
+    },
+    "Spot Hidden": {
+      "base": "25",
+      "reg": "",
+      "used": false
+    },
+    "Stealth": {
+      "base": "20",
+      "reg": "",
+      "used": false
+    },
+    "Survival": {
+      "base": "10",
+      "reg": "",
+      "used": false
+    },
+    "Swim": {
+      "base": "20",
+      "reg": "",
+      "used": false
+    },
+    "Throw": {
+      "base": "20",
+      "reg": "",
+      "used": false
+    },
+    "Track": {
+      "base": "10",
+      "reg": "",
+      "used": false
+    }
+  },
+  "combat": {
+    "weapons": [
+      {
+        "name": "Brawl",
+        "skill": "Fighting (Brawl)",
+        "damage": "1D3 + DB",
+        "num_attacks": "1",
+        "range": "-",
+        "ammo": "-",
+        "malf": "-"
+      }
+    ],
+    "move": 8,
+    "build": "",
+    "damage_bonus": ""
+  },
+  "story": {
+    "my_story": "",
+    "backstory": {
+      "personal_description": "",
+      "ideology_beliefs": "",
+      "significant_people": "",
+      "meaningful_locations": "",
+      "treasured_possessions": "",
+      "traits": "",
+      "injuries_scars": "",
+      "phobias_manias": "",
+      "arcane_tomes_spells": "",
+      "encounters_strange_entities": ""
+    }
+  },
+  "gear_possessions": "",
+  "wealth": {
+    "spending_level": "",
+    "cash": "",
+    "assets": ""
+  },
+  "relationships": [
+
+  ]
+}
+```

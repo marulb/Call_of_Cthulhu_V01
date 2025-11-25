@@ -52,7 +52,7 @@
 
       <!-- Create new entity -->
       <div class="create-section">
-        <button v-if="!showCreateForm" @click="showCreateForm = true" class="btn-create">
+        <button v-if="!showCreateForm" @click="handleCreateClick" class="btn-create">
           + Create New {{ entityType }}
         </button>
 
@@ -116,19 +116,22 @@ interface Props {
   loading?: boolean
   error?: string | null
   showBack?: boolean
+  useCustomCreate?: boolean  // If true, emit createClick instead of showing built-in form
 }
 
 const props = withDefaults(defineProps<Props>(), {
   multiSelect: false,
   loading: false,
   error: null,
-  showBack: true
+  showBack: true,
+  useCustomCreate: false
 })
 
 const emit = defineEmits<{
   select: [entity: any]
   toggleSelect: [entity: any]
   create: [data: { name: string; description?: string }]
+  createClick: []  // Emitted when create button clicked (if useCustomCreate is true)
   continue: []
   back: []
 }>()
@@ -154,6 +157,14 @@ function toggleSelection(entity: Entity) {
 
 function toggleDetails(id: string) {
   expandedId.value = expandedId.value === id ? null : id
+}
+
+function handleCreateClick() {
+  if (props.useCustomCreate) {
+    emit('createClick')
+  } else {
+    showCreateForm.value = true
+  }
 }
 
 function handleCreate() {

@@ -53,6 +53,122 @@ export interface Campaign {
   changes: Array<{ by: string; at: string; type?: string }>
 }
 
+// ============== CHARACTER SHEET TYPES ==============
+
+export interface InvestigatorInfo {
+  name: string
+  birthplace: string
+  pronoun: string
+  occupation: string
+  residence: string
+  age: string
+}
+
+export interface CharacteristicValue {
+  reg: string
+}
+
+export interface Characteristics {
+  STR: CharacteristicValue
+  CON: CharacteristicValue
+  DEX: CharacteristicValue
+  APP: CharacteristicValue
+  INT: CharacteristicValue
+  POW: CharacteristicValue
+  SIZ: CharacteristicValue
+  EDU: CharacteristicValue
+}
+
+export interface PointPool {
+  max: string
+  current: string
+}
+
+export interface SanityPool extends PointPool {
+  insane: string
+}
+
+export interface LuckPool {
+  starting: string
+  current: string
+}
+
+export interface CharacterStatus {
+  temporary_insanity: boolean
+  indefinite_insanity: boolean
+  major_wound: boolean
+  unconscious: boolean
+  dying: boolean
+}
+
+export interface Skill {
+  base: string
+  reg: string
+  used: boolean
+}
+
+export interface Weapon {
+  name: string
+  skill: string
+  damage: string
+  num_attacks: string
+  range: string
+  ammo: string
+  malf: string
+}
+
+export interface Combat {
+  weapons: Weapon[]
+  move: number
+  build: string
+  damage_bonus: string
+}
+
+export interface Backstory {
+  personal_description: string
+  ideology_beliefs: string
+  significant_people: string
+  meaningful_locations: string
+  treasured_possessions: string
+  traits: string
+  injuries_scars: string
+  phobias_manias: string
+  arcane_tomes_spells: string
+  encounters_strange_entities: string
+}
+
+export interface Story {
+  my_story: string
+  backstory: Backstory
+}
+
+export interface Wealth {
+  spending_level: string
+  cash: string
+  assets: string
+}
+
+export interface Relationship {
+  object: string
+  relation: string
+}
+
+export interface CharacterSheet {
+  investigator: InvestigatorInfo
+  characteristics: Characteristics
+  hit_points: PointPool
+  magic_points: PointPool
+  luck: LuckPool
+  sanity: SanityPool
+  status: CharacterStatus
+  skills: Record<string, Skill>
+  combat: Combat
+  story: Story
+  gear_possessions: string
+  wealth: Wealth
+  relationships: Relationship[]
+}
+
 export interface Character {
   id: string
   uid?: string
@@ -66,7 +182,9 @@ export interface Character {
     mode: string
     agent?: string
   }
-  data?: any
+  data: CharacterSheet
+  ooc_notes: string
+  profile_completed: boolean
   meta: { created_by: string; created_at: string }
   visibility?: string
   changes: Array<{ by: string; at: string; type?: string }>
@@ -241,6 +359,9 @@ export const charactersAPI = {
     description?: string
     owner: string
     created_by: string
+    data?: CharacterSheet
+    ooc_notes?: string
+    profile_completed?: boolean
   }) =>
     fetchJSON<Character>('/characters', {
       method: 'POST',
@@ -255,6 +376,9 @@ export const charactersAPI = {
       description?: string
       owner: string
       created_by: string
+      data?: CharacterSheet
+      ooc_notes?: string
+      profile_completed?: boolean
     }
   ) =>
     fetchJSON<Character>(`/characters/${id}`, {

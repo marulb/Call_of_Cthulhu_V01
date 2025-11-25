@@ -115,6 +115,139 @@ class Controller(BaseModel):
     agent: Optional[str] = None  # "human" or agent name
 
 
+# ============== CHARACTER SHEET MODELS ==============
+
+class InvestigatorInfo(BaseModel):
+    """Investigator basic information."""
+    name: str = ""
+    birthplace: str = ""
+    pronoun: str = ""
+    occupation: str = ""
+    residence: str = ""
+    age: str = ""
+
+
+class CharacteristicValue(BaseModel):
+    """Single characteristic value."""
+    reg: str = ""  # Regular value (user input)
+
+
+class Characteristics(BaseModel):
+    """Character characteristics."""
+    STR: CharacteristicValue = Field(default_factory=CharacteristicValue)
+    CON: CharacteristicValue = Field(default_factory=CharacteristicValue)
+    DEX: CharacteristicValue = Field(default_factory=CharacteristicValue)
+    APP: CharacteristicValue = Field(default_factory=CharacteristicValue)
+    INT: CharacteristicValue = Field(default_factory=CharacteristicValue)
+    POW: CharacteristicValue = Field(default_factory=CharacteristicValue)
+    SIZ: CharacteristicValue = Field(default_factory=CharacteristicValue)
+    EDU: CharacteristicValue = Field(default_factory=CharacteristicValue)
+
+
+class PointPool(BaseModel):
+    """Generic point pool (HP, MP, Luck, Sanity)."""
+    max: str = ""
+    current: str = ""
+
+
+class SanityPool(PointPool):
+    """Sanity point pool with insanity threshold."""
+    insane: str = ""
+
+
+class LuckPool(BaseModel):
+    """Luck point pool with starting value."""
+    starting: str = ""
+    current: str = ""
+
+
+class CharacterStatus(BaseModel):
+    """Character status flags."""
+    temporary_insanity: bool = False
+    indefinite_insanity: bool = False
+    major_wound: bool = False
+    unconscious: bool = False
+    dying: bool = False
+
+
+class Skill(BaseModel):
+    """Individual skill."""
+    base: str = ""  # Base value (not saved to DB, used for copying to reg)
+    reg: str = ""   # Regular value (user input)
+    used: bool = False  # Checkbox for skill usage tracking
+
+
+class Weapon(BaseModel):
+    """Combat weapon."""
+    name: str = ""
+    skill: str = ""
+    damage: str = ""
+    num_attacks: str = ""
+    range: str = ""
+    ammo: str = ""
+    malf: str = ""
+
+
+class Combat(BaseModel):
+    """Combat stats and weapons."""
+    weapons: List[Weapon] = Field(default_factory=lambda: [
+        Weapon(name="Brawl", skill="Fighting (Brawl)", damage="1D3 + DB", num_attacks="1", range="-", ammo="-", malf="-")
+    ])
+    move: int = 8
+    build: str = ""
+    damage_bonus: str = ""
+
+
+class Backstory(BaseModel):
+    """Character backstory details."""
+    personal_description: str = ""
+    ideology_beliefs: str = ""
+    significant_people: str = ""
+    meaningful_locations: str = ""
+    treasured_possessions: str = ""
+    traits: str = ""
+    injuries_scars: str = ""
+    phobias_manias: str = ""
+    arcane_tomes_spells: str = ""
+    encounters_strange_entities: str = ""
+
+
+class Story(BaseModel):
+    """Character story and background."""
+    my_story: str = ""
+    backstory: Backstory = Field(default_factory=Backstory)
+
+
+class Wealth(BaseModel):
+    """Character wealth and resources."""
+    spending_level: str = ""
+    cash: str = ""
+    assets: str = ""
+
+
+class Relationship(BaseModel):
+    """Character relationship."""
+    object: str = ""      # Target of relationship (name/id)
+    relation: str = ""    # Nature of relationship
+
+
+class CharacterSheet(BaseModel):
+    """Complete Call of Cthulhu character sheet."""
+    investigator: InvestigatorInfo = Field(default_factory=InvestigatorInfo)
+    characteristics: Characteristics = Field(default_factory=Characteristics)
+    hit_points: PointPool = Field(default_factory=PointPool)
+    magic_points: PointPool = Field(default_factory=PointPool)
+    luck: LuckPool = Field(default_factory=LuckPool)
+    sanity: SanityPool = Field(default_factory=SanityPool)
+    status: CharacterStatus = Field(default_factory=CharacterStatus)
+    skills: Dict[str, Skill] = Field(default_factory=dict)
+    combat: Combat = Field(default_factory=Combat)
+    story: Story = Field(default_factory=Story)
+    gear_possessions: str = ""
+    wealth: Wealth = Field(default_factory=Wealth)
+    relationships: List[Relationship] = Field(default_factory=list)
+
+
 class Character(BaseModel):
     """Character entity (PC) - belongs to realm."""
     id: Optional[str] = None
@@ -125,7 +258,9 @@ class Character(BaseModel):
     realm_id: str
     description: Optional[str] = None
     controller: Controller
-    data: Dict[str, Any] = Field(default_factory=dict)  # Character sheet, stats, etc.
+    data: CharacterSheet = Field(default_factory=CharacterSheet)  # Full character sheet
+    ooc_notes: str = ""  # Player's OOC notes and reminders
+    profile_completed: bool = False  # Whether character sheet is fully filled out
     meta: Meta
     visibility: str = "realm"
     changes: List[Change] = Field(default_factory=list)
@@ -287,6 +422,9 @@ class CharacterCreate(BaseModel):
     description: Optional[str] = None
     owner: str  # Player name
     created_by: str
+    data: Optional[CharacterSheet] = None
+    ooc_notes: Optional[str] = ""
+    profile_completed: Optional[bool] = False
 
 
 class SessionCreate(BaseModel):

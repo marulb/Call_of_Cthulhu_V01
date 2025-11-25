@@ -8,12 +8,32 @@
 
     <!-- Players List - Horizontal at top -->
     <div class="players-bar" ref="playersBarRef">
-      <PlayersList 
-        :players="playersWithDetails" 
+      <PlayersList
+        :players="playersWithDetails"
         :current-player-id="sessionStore.playerId || ''"
-        :master-player-id="sessionStore.currentSession?.master_player_id" 
-        @toggle-ready="handleToggleReady" 
+        :master-player-id="sessionStore.currentSession?.master_player_id"
+        @toggle-ready="handleToggleReady"
+        @character-double-click="handleCharacterDoubleClick"
       />
+    </div>
+
+    <!-- Character Sheet Modal -->
+    <div v-if="showCharacterSheet" class="modal-overlay" @click.self="closeCharacterSheet">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>{{ editingCharacter?.name || 'Character Sheet' }}</h2>
+          <button @click="closeCharacterSheet" class="btn-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <CharacterSheetForm
+            v-if="editingCharacter"
+            v-model="editingCharacter"
+            :readonly="isCharacterReadOnly"
+            :is-game-view="true"
+            @submit="handleCharacterSheetSubmit"
+          />
+        </div>
+      </div>
     </div>
 
     <!-- Main Game Content: responsive grid controlled by BASE_BREAKPOINT -->
@@ -46,16 +66,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameSessionStore } from '@/stores/gameSession'
 import { useSocket } from '@/composables/useSocket'
+import { charactersAPI } from '@/services/api'
+import type { Character } from '@/services/api'
 import SessionInfoHeader from '@/components/SessionInfoHeader.vue'
 import PlayersList from '@/components/PlayersList.vue'
 import SceneActiveTurn from '@/components/SceneActiveTurn.vue'
 import SceneProgress from '@/components/SceneProgress.vue'
 import RealmChat from '@/components/RealmChat.vue'
 import ProphetChat from '@/components/ProphetChat.vue'
+import CharacterSheetForm from '@/components/CharacterSheetForm.vue'
 import type { ActionDraft, Turn, ChatMessage } from '@/types/gameplay'
 
 const router = useRouter()
@@ -71,6 +94,11 @@ const currentChapter = ref<string>('')
 const currentScene = ref<any>(null)
 const allRealmCharacters = ref<any[]>([]) // All characters in the realm
 const characterReadyStates = ref<Map<string, boolean>>(new Map()) // character_id -> ready state
+
+// Character Sheet Modal State
+const showCharacterSheet = ref(false)
+const editingCharacter = ref<Character | null>(null)
+let autosaveTimeout: ReturnType<typeof setTimeout> | null = null
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8093'
 
@@ -337,6 +365,80 @@ async function loadTurns() {
     console.error('Error loading turns:', error)
   }
 }
+
+// Character Sheet handlers
+const isCharacterReadOnly = computed(() => {
+  if (!editingCharacter.value) return true
+  // Character is read-only if current player is not the owner
+  return editingCharacter.value.controller?.owner !== sessionStore.playerName
+})
+
+async function handleCharacterDoubleClick(characterId: string) {
+  try {
+    // Load full character data from API
+    const character = await charactersAPI.get(characterId)
+    editingCharacter.value = character
+    showCharacterSheet.value = true
+  } catch (error) {
+    console.error('Error loading character:', error)
+    alert('Failed to load character sheet')
+  }
+}
+
+function closeCharacterSheet() {
+  showCharacterSheet.value = false
+  editingCharacter.value = null
+  if (autosaveTimeout) {
+    clearTimeout(autosaveTimeout)
+    autosaveTimeout = null
+  }
+}
+
+async function handleCharacterSheetSubmit(characterData: Partial<Character>) {
+  if (!characterData.id) return
+
+  try {
+    await charactersAPI.update(characterData.id, {
+      realm_id: characterData.realm_id!,
+      name: characterData.name!,
+      description: characterData.description,
+      owner: characterData.controller!.owner,
+      created_by: sessionStore.playerName,
+      data: characterData.data,
+      ooc_notes: characterData.ooc_notes,
+      profile_completed: characterData.profile_completed
+    })
+
+    // Update local character in allRealmCharacters
+    const index = allRealmCharacters.value.findIndex(c => c.id === characterData.id)
+    if (index !== -1) {
+      allRealmCharacters.value[index] = { ...characterData }
+    }
+
+    // If profile is now completed, close the modal
+    if (characterData.profile_completed) {
+      closeCharacterSheet()
+    }
+  } catch (error) {
+    console.error('Error updating character:', error)
+    alert('Failed to save character sheet')
+  }
+}
+
+// Autosave character sheet changes (only if profile is completed)
+watch(editingCharacter, (newChar) => {
+  if (!newChar || isCharacterReadOnly.value || !newChar.profile_completed) return
+
+  // Clear existing timeout
+  if (autosaveTimeout) {
+    clearTimeout(autosaveTimeout)
+  }
+
+  // Set new timeout for autosave (debounce 2 seconds)
+  autosaveTimeout = setTimeout(async () => {
+    await handleCharacterSheetSubmit(newChar)
+  }, 2000)
+}, { deep: true })
 
 // Action draft handlers
 async function handleCreateDraft(draftData: Partial<ActionDraft>) {
@@ -677,5 +779,71 @@ function handleSendProphetMessage(message: string) {
 /* sensible defaults for very small screens */
 @media (max-width: 480px) {
   .grid-item { min-height: 180px }
+}
+
+/* Character Sheet Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.modal-content {
+  background: var(--color-background);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 1400px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: var(--color-heading);
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.btn-close:hover {
+  background: var(--color-background-mute);
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
 }
 </style>

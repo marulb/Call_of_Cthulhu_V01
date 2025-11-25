@@ -63,6 +63,9 @@ async def create_character(character_data: CharacterCreate):
             mode="player",
             agent="human"
         ),
+        data=character_data.data if character_data.data else None,
+        ooc_notes=character_data.ooc_notes or "",
+        profile_completed=character_data.profile_completed or False,
         meta=Meta(created_by=character_data.created_by),
         changes=[Change(by=character_data.created_by, type="created")]
     )
@@ -93,6 +96,18 @@ async def update_character(character_id: str, character_data: CharacterCreate):
     existing["name"] = character_data.name
     existing["type"] = character_data.type
     existing["description"] = character_data.description
+
+    # Update character sheet data if provided
+    if character_data.data is not None:
+        existing["data"] = character_data.data.dict()
+
+    # Update ooc_notes if provided
+    if character_data.ooc_notes is not None:
+        existing["ooc_notes"] = character_data.ooc_notes
+
+    # Update profile_completed if provided
+    if character_data.profile_completed is not None:
+        existing["profile_completed"] = character_data.profile_completed
 
     # Add change record
     existing["changes"].append(
