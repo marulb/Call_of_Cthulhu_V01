@@ -17,28 +17,26 @@
       />
     </div>
 
-    <!-- Character Sheet Modal -->
-    <div v-if="showCharacterSheet" class="modal-overlay" @click.self="closeCharacterSheet">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>{{ editingCharacter?.name || 'Character Sheet' }}</h2>
-          <button @click="closeCharacterSheet" class="btn-close">✕</button>
-        </div>
-        <div class="modal-body">
-          <CharacterSheetForm
-            v-if="editingCharacter"
-            v-model="editingCharacter"
-            :readonly="isCharacterReadOnly"
-            :is-game-view="true"
-            @submit="handleCharacterSheetSubmit"
-          />
-        </div>
-      </div>
-    </div>
-
     <!-- Main Game Content: responsive grid controlled by BASE_BREAKPOINT -->
     <div class="game-content">
-      <div class="game-grid" :class="`layout-${layoutMode}`">
+      <div class="game-grid" :class="[`layout-${layoutMode}`, { 'with-sheet': showCharacterSheet }]">
+            <!-- Character Sheet (when open) -->
+            <div v-if="showCharacterSheet" class="grid-item sheet" :style="{ gridArea: 'sheet', height: areaHeightPx + 'px' }">
+              <div class="sheet-header">
+                <h2>{{ editingCharacter?.name || 'Character Sheet' }}</h2>
+                <button @click="closeCharacterSheet" class="btn-close" title="Close character sheet">✕</button>
+              </div>
+              <div class="sheet-body">
+                <CharacterSheetForm
+                  v-if="editingCharacter"
+                  v-model="editingCharacter"
+                  :readonly="isCharacterReadOnly"
+                  :is-game-view="true"
+                  @submit="handleCharacterSheetSubmit"
+                />
+              </div>
+            </div>
+
             <div class="grid-item turn" :style="{ gridArea: 'turn', height: areaHeightPx + 'px' }">
               <SceneProgress :turns="turns" :characters="sessionStore.selectedCharacters" />
             </div>
@@ -744,10 +742,28 @@ function handleSendProphetMessage(message: string) {
     "rules";
 }
 
+/* Small with character sheet: sheet at top */
+.layout-small.with-sheet {
+  grid-template-areas:
+    "sheet"
+    "turn"
+    "action"
+    "realm"
+    "rules";
+}
+
 /* Medium: two-by-two (<= BASE_BREAKPOINT * 2) */
 .layout-medium {
   grid-template-columns: 1fr 1fr;
   grid-template-areas:
+    "turn action"
+    "realm rules";
+}
+
+/* Medium with character sheet: sheet spans top row */
+.layout-medium.with-sheet {
+  grid-template-areas:
+    "sheet sheet"
     "turn action"
     "realm rules";
 }
@@ -758,6 +774,12 @@ function handleSendProphetMessage(message: string) {
   grid-template-areas: "turn action realm rules";
 }
 
+/* Large with character sheet: 5 columns with sheet on left */
+.layout-large.with-sheet {
+  grid-template-columns: minmax(400px, 1.2fr) repeat(4, minmax(200px, 1fr));
+  grid-template-areas: "sheet turn action realm rules";
+}
+
 .grid-item {
   display: flex;
   flex-direction: column;
@@ -765,6 +787,7 @@ function handleSendProphetMessage(message: string) {
   overflow: hidden;
 }
 
+.grid-item.sheet { grid-area: sheet }
 .grid-item.turn { grid-area: turn }
 .grid-item.action { grid-area: action }
 .grid-item.realm { grid-area: realm }
@@ -781,47 +804,32 @@ function handleSendProphetMessage(message: string) {
   .grid-item { min-height: 180px }
 }
 
-/* Character Sheet Modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.modal-content {
+/* Character Sheet Styles */
+.grid-item.sheet {
   background: var(--color-background);
-  border-radius: 12px;
-  width: 100%;
-  max-width: 1400px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 2px solid var(--vt-c-ink-green);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.modal-header {
+.sheet-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: 12px 16px;
+  background: var(--color-background-soft);
   border-bottom: 2px solid var(--color-border);
+  flex-shrink: 0;
 }
 
-.modal-header h2 {
+.sheet-header h2 {
   margin: 0;
+  font-size: 18px;
+  font-weight: 700;
   color: var(--color-heading);
 }
 
-.btn-close {
+.sheet-header .btn-close {
   background: none;
   border: none;
   font-size: 24px;
@@ -835,15 +843,17 @@ function handleSendProphetMessage(message: string) {
   justify-content: center;
   border-radius: 4px;
   transition: background 0.2s;
+  flex-shrink: 0;
 }
 
-.btn-close:hover {
+.sheet-header .btn-close:hover {
   background: var(--color-background-mute);
 }
 
-.modal-body {
+.sheet-body {
   flex: 1;
   overflow-y: auto;
   padding: 0;
+  min-height: 0;
 }
 </style>
