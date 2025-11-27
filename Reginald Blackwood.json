@@ -1,0 +1,256 @@
+{
+  "investigator": {
+    "name": "Reginald Blackwood",
+    "birthplace": "Edinburgh, Scotland",
+    "pronoun": "He/His",
+    "occupation": "Electrical Engineer",
+    "residence": "Bloomsbury, London",
+    "age": "29"
+  },
+  "characteristics": {
+    "STR": {
+      "reg": "40"
+    },
+    "CON": {
+      "reg": "50"
+    },
+    "DEX": {
+      "reg": "50"
+    },
+    "APP": {
+      "reg": "50"
+    },
+    "INT": {
+      "reg": "70"
+    },
+    "POW": {
+      "reg": "80"
+    },
+    "SIZ": {
+      "reg": "60"
+    },
+    "EDU": {
+      "reg": "60"
+    }
+  },
+  "hit_points": {
+    "max": "11",
+    "current": "11"
+  },
+  "magic_points": {
+    "max": "16",
+    "current": "16"
+  },
+  "luck": {
+    "starting": "65",
+    "current": "65"
+  },
+  "sanity": {
+    "starting": "80",
+    "current": "80",
+    "insane": "16",
+    "max": "80"
+  },
+  "status": {
+    "max_sanity": "80",
+    "temporary_insanity": false,
+    "indefinite_insanity": false,
+    "major_wound": false,
+    "unconscious": false,
+    "dying": false
+  },
+  "skills": {
+    "Accounting": {
+      "reg": "05"
+    },
+    "Anthropology": {
+      "reg": "01"
+    },
+    "Appraise": {
+      "reg": "05"
+    },
+    "Archaeology": {
+      "reg": "01"
+    },
+    "Art/Craft": {
+      "reg": "05"
+    },
+    "Charm": {
+      "reg": "15"
+    },
+    "Climb": {
+      "reg": "20"
+    },
+    "Credit Rating": {
+      "reg": "40"
+    },
+    "Cthulhu Mythos": {
+      "reg": "6"
+    },
+    "Disguise": {
+      "reg": "05"
+    },
+    "Dodge": {
+      "reg": "25"
+    },
+    "Drive Auto": {
+      "reg": "40"
+    },
+    "Elec. Repair": {
+      "reg": "70"
+    },
+    "Fast Talk": {
+      "reg": "05"
+    },
+    "Fighting (Brawl)": {
+      "reg": "25"
+    },
+    "Firearms (Handgun)": {
+      "reg": "20"
+    },
+    "Firearms (Rifle/Shotgun)": {
+      "reg": "25"
+    },
+    "First Aid": {
+      "reg": "59"
+    },
+    "History": {
+      "reg": "05"
+    },
+    "Intimidate": {
+      "reg": "15"
+    },
+    "Jump": {
+      "reg": "20"
+    },
+    "Language": {
+      "reg": "01"
+    },
+    "Language (Own)": {
+      "reg": "60"
+    },
+    "Law": {
+      "reg": "05"
+    },
+    "Library Use": {
+      "reg": "50"
+    },
+    "Listen": {
+      "reg": "40"
+    },
+    "Locksmith": {
+      "reg": "01"
+    },
+    "Mech. Repair": {
+      "reg": "60"
+    },
+    "Medicine": {
+      "reg": "01"
+    },
+    "Natural World": {
+      "reg": "40"
+    },
+    "Navigate": {
+      "reg": "12"
+    },
+    "Occult": {
+      "reg": "50"
+    },
+    "Persuade": {
+      "reg": "14"
+    },
+    "Pilot": {
+      "reg": "01"
+    },
+    "Psychoanalysis": {
+      "reg": "01"
+    },
+    "Psychology": {
+      "reg": "10"
+    },
+    "Ride": {
+      "reg": "05"
+    },
+    "Science (Chemistry)": {
+      "reg": "50"
+    },
+    "Science (Physics)": {
+      "reg": "60"
+    },
+    "Sleight of Hand": {
+      "reg": "10"
+    },
+    "Spot Hidden": {
+      "reg": "50"
+    },
+    "Stealth": {
+      "reg": "20"
+    },
+    "Survival": {
+      "reg": "10"
+    },
+    "Swim": {
+      "reg": "20"
+    },
+    "Throw": {
+      "reg": "20"
+    },
+    "Track": {
+      "reg": "10"
+    }
+  },
+  "combat": {
+    "weapons": [
+      {
+        "name": "Brawl",
+        "skill": "",
+        "damage": "1D3 + DB",
+        "num_attacks": "1",
+        "range": "-",
+        "ammo": "-",
+        "malf": "-"
+      }
+    ],
+    "move": "8",
+    "build": "0",
+    "damage_bonus": "None"
+  },
+  "story": {
+    "my_story": "",
+    "backstory": {
+      "personal_description": "",
+      "ideology_beliefs": "",
+      "significant_people": "",
+      "meaningful_locations": "",
+      "treasured_possessions": "",
+      "traits": "",
+      "injuries_scars": "",
+      "phobias_manias": "",
+      "arcane_tomes_spells": "",
+      "encounters_strange_entities": ""
+    }
+  },
+  "gear_possessions": "",
+  "wealth": {
+    "spending_level": "40",
+    "cash": "",
+    "assets": ""
+  },
+  "relationships": [
+    {
+      "entity": "Evelyn Moreau",
+      "entity_type": "pc",
+      "relation": "pc"
+    },
+    {
+      "entity": "Lucien Drake",
+      "entity_type": "pc",
+      "relation": "pc"
+    },
+    {
+      "entity": "Professor Henry Armitage",
+      "entity_type": "pc",
+      "relation": "pc"
+    }
+  ]
+}

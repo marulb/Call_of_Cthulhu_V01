@@ -6,35 +6,35 @@
       </div>
 
       <div v-else class="relationships-list">
-        <div v-for="(rel, index) in relationships" :key="index" class="relationship-row">
-          <div class="relationship-fields">
-            <div class="form-field">
-              <label>Target (Name/ID)</label>
-              <input
-                v-model="rel.object"
-                type="text"
-                :readonly="readonly"
-                placeholder="Person, place, or thing"
-              />
-            </div>
-            <div class="form-field">
-              <label>Relationship</label>
-              <input
-                v-model="rel.relation"
-                type="text"
-                :readonly="readonly"
-                placeholder="e.g., friend, enemy, mentor"
-              />
-            </div>
+        <div v-for="(rel, index) in relationships" :key="`rel-${index}-${rel.object}-${rel.relation}`" class="relationship-card">
+          <div class="relationship-header">
+            <input
+              :value="rel.object"
+              @input="updateRelationshipField(index, 'object', ($event.target as HTMLInputElement).value)"
+              type="text"
+              :readonly="readonly"
+              placeholder="Person, place, or thing"
+              class="relationship-target-input"
+            />
+            <button
+              v-if="!readonly"
+              @click="removeRelationship(index)"
+              class="btn-remove"
+              title="Remove relationship"
+            >
+              −
+            </button>
           </div>
-          <button
-            v-if="!readonly"
-            @click="removeRelationship(index)"
-            class="btn-remove"
-            title="Remove relationship"
-          >
-            −
-          </button>
+          <div class="relationship-field">
+            <label>Relationship</label>
+            <input
+              :value="rel.relation"
+              @input="updateRelationshipField(index, 'relation', ($event.target as HTMLInputElement).value)"
+              type="text"
+              :readonly="readonly"
+              placeholder="e.g., friend, enemy, mentor"
+            />
+          </div>
         </div>
       </div>
 
@@ -50,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed } from 'vue'
 import type { Relationship } from '@/services/api'
 import CollapsibleSection from './CollapsibleSection.vue'
 
@@ -67,25 +67,34 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: Relationship[]): void
 }>()
 
-const relationships = ref<Relationship[]>([...props.modelValue])
+// Use computed getter for proper reactivity
+const relationships = computed(() => props.modelValue)
 
-watch(() => props.modelValue, (newVal) => {
-  relationships.value = [...newVal]
-}, { deep: true })
+function updateRelationshipField(index: number, field: string, value: string) {
+  const updatedRelationships = relationships.value.map((rel, i) => {
+    if (i === index) {
+      return { ...rel, [field]: value }
+    }
+    return rel
+  })
 
-watch(relationships, (newVal) => {
-  emit('update:modelValue', newVal)
-}, { deep: true })
+  emit('update:modelValue', updatedRelationships)
+}
 
 function addRelationship() {
-  relationships.value.push({
-    object: '',
-    relation: ''
-  })
+  // Emit new array with added relationship
+  emit('update:modelValue', [
+    ...relationships.value,
+    {
+      object: '',
+      relation: ''
+    }
+  ])
 }
 
 function removeRelationship(index: number) {
-  relationships.value.splice(index, 1)
+  // Emit new array without the removed relationship
+  emit('update:modelValue', relationships.value.filter((_, i) => i !== index))
 }
 </script>
 
@@ -106,56 +115,75 @@ function removeRelationship(index: number) {
 .relationships-list {
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+.relationship-card {
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
-.relationship-row {
+.relationship-header {
   display: flex;
   gap: 8px;
-  align-items: flex-end;
+  align-items: center;
 }
 
-.relationship-fields {
+.relationship-target-input {
   flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--color-background);
+  color: var(--color-heading);
 }
 
-@media (max-width: 768px) {
-  .relationship-fields {
-    grid-template-columns: 1fr;
-  }
+.relationship-target-input:focus {
+  outline: none;
+  border-color: var(--vt-c-ink-green-light);
 }
 
-.form-field {
+.relationship-target-input:read-only {
+  background: var(--color-background-mute);
+  cursor: default;
+}
+
+.relationship-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.form-field label {
+.relationship-field label {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text);
+  opacity: 0.8;
 }
 
-.form-field input {
-  padding: 8px 12px;
+.relationship-field input {
+  padding: 6px 10px;
   border: 1px solid var(--color-border);
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 13px;
   background: var(--color-background);
   color: var(--color-text);
 }
 
-.form-field input:focus {
+.relationship-field input:focus {
   outline: none;
   border-color: var(--vt-c-ink-green-light);
 }
 
-.form-field input:read-only {
-  background: var(--color-background-soft);
+.relationship-field input:read-only {
+  background: var(--color-background-mute);
   cursor: not-allowed;
 }
 

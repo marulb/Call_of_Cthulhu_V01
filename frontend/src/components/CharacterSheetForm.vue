@@ -334,14 +334,23 @@ const characteristicNames = ['STR', 'CON', 'DEX', 'APP', 'INT', 'POW', 'SIZ', 'E
 // File input ref
 const fileInput = ref<HTMLInputElement | null>(null)
 
+// Flag to prevent watch loops
+let isUpdating = false
+
 // Watch for external changes
 watch(() => props.modelValue, (newVal) => {
-  character.value = initializeCharacter(newVal)
+  if (!isUpdating) {
+    character.value = initializeCharacter(newVal)
+  }
 }, { deep: true })
 
 // Watch for internal changes and emit
 watch(character, (newVal) => {
+  isUpdating = true
   emit('update:modelValue', newVal)
+  setTimeout(() => {
+    isUpdating = false
+  }, 0)
 }, { deep: true })
 
 function initializeCharacter(char: Partial<Character>): Partial<Character> {
@@ -541,9 +550,37 @@ function saveToJSON() {
   flex: 1;
   overflow-y: auto;
   padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  min-height: 0;
+}
+
+.form-sections > * + * {
+  margin-top: 16px;
+}
+
+/* Scrollbar styles: WebKit + Firefox friendly */
+.form-sections {
+  scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+  scrollbar-width: thin;
+}
+
+.form-sections::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.form-sections::-webkit-scrollbar-track {
+  background: var(--color-scrollbar-track);
+}
+
+.form-sections::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.form-sections::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
 }
 
 .form-grid {

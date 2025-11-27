@@ -4,7 +4,7 @@
       <h3>{{ title }}</h3>
       <span class="toggle-icon" :class="{ open: isOpen }">▼</span>
     </div>
-    <div v-if="isOpen" class="section-content">
+    <div v-show="isOpen" class="section-content">
       <slot></slot>
     </div>
   </div>
