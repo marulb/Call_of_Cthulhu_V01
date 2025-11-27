@@ -2,7 +2,10 @@
   <div class="active-turn">
     <div class="list-header">
       <h3>Scene - Active Turn</h3>
-      <button v-if="!showNewForm" @click="showNewForm = true" class="btn-add">+ New Action</button>
+      <div class="header-actions">
+        <button v-if="!showNewForm" @click="showNewForm = true" class="btn-add">+ New Action</button>
+        <button @click="emit('close')" class="btn-close" title="Close">✕</button>
+      </div>
     </div>
 
     <div class="actions-container">
@@ -180,6 +183,7 @@ const emit = defineEmits<{
   reorderDrafts: [order: string[]]
   submitTurn: []
   dungeonmasterResponse: [response: any]
+  close: []
 }>()
 
 // n8n webhook for dungeonmaster (SceneActiveTurn actions)
@@ -382,6 +386,12 @@ function submitTurn() {
   color: var(--color-heading);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .btn-add {
   padding: 6px 12px;
   background: var(--vt-c-ink-green-light);
@@ -396,6 +406,27 @@ function submitTurn() {
 
 .btn-add:hover {
   background: var(--vt-c-ink-green);
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-close:hover {
+  background: var(--color-background-mute);
 }
 
 .actions-container {

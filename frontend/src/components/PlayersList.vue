@@ -1,64 +1,62 @@
 <template>
-  <div class="players-list-horizontal">
+  <div class="players-list-compact">
+    <div class="players-header">
+      <h4>Players</h4>
+    </div>
+
     <div class="players-container">
-      <!-- Each player column -->
+      <!-- Each player section -->
       <div
         v-for="player in players"
         :key="player.player_id"
-        class="player-column"
+        class="player-section"
       >
-        <!-- Player Row (Header) -->
-        <div class="player-row" :class="getPlayerClass(player)">
-          <span class="entity-name">{{ player.player_name }}</span>
-          <span v-if="player.player_id === masterPlayerId" class="master-badge">★</span>
+        <!-- Player Header -->
+        <div class="player-item" :class="getPlayerClass(player)">
           <button
             v-if="isLocalPlayer(player)"
-            class="ready-toggle"
+            class="ready-led"
             :class="{ ready: isPlayerReady(player) }"
             @click="togglePlayerReady(player)"
             :title="isPlayerReady(player) ? 'Mark all as not ready' : 'Mark all as ready'"
           >
             <span class="led"></span>
           </button>
+          <span class="player-name">{{ player.player_name }}</span>
+          <span v-if="player.player_id === masterPlayerId" class="master-star">★</span>
         </div>
 
-        <!-- Characters Row - responsive: horizontal first, then vertical -->
-        <div class="characters-row">
+        <!-- Characters List -->
+        <div class="characters-list">
           <div
             v-for="char in player.characters"
             :key="char.id"
-            class="character-cell"
+            class="character-item"
             :class="getCharacterClass(player, char)"
             @dblclick="handleCharacterDoubleClick(char.id)"
-            :title="'Double-click to view/edit character sheet'"
+            :title="'Double-click to edit'"
           >
-            <span class="entity-name">{{ char.name }}</span>
             <button
               v-if="isLocalPlayer(player)"
-              class="ready-toggle"
+              class="ready-led"
               :class="{ ready: char.ready }"
               @click.stop="toggleCharacterReady(player.player_id, char.id)"
-              :title="char.ready ? 'Mark as not ready' : 'Mark as ready'"
+              :title="char.ready ? 'Mark not ready' : 'Mark ready'"
             >
               <span class="led"></span>
             </button>
+            <span class="character-name">{{ char.name }}</span>
           </div>
           <div v-if="player.characters.length === 0" class="no-characters">
-            (no characters)
+            No characters
           </div>
         </div>
       </div>
 
       <div v-if="players.length === 0" class="empty-state">
-        No players online
+        No players
       </div>
     </div>
-
-    <!-- <div class="players-summary">
-      <span class="summary-text">
-        {{ onlineCount }} online • {{ readyCount }}/{{ totalCharacters }} ready
-      </span>
-    </div> -->
   </div>
 </template>
 
@@ -166,252 +164,145 @@ const readyCount = computed(() => {
 </script>
 
 <style scoped>
-/* TODO: Consider adding to base.css:
-   --color-player-local-not-ready (yellow background for local player not ready)
-   --color-player-local-ready (green background for local player ready)
-   --color-player-remote-not-ready (red background for remote player not ready)
-   --color-player-remote-ready (green background for remote player ready)
-   --color-led-off (LED indicator when toggled off/red)
-   --color-led-on (LED indicator when toggled on/green)
-*/
-
-.players-list-horizontal {
+.players-list-compact {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  padding: 12px 16px;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.players-header {
+  padding: 8px 12px;
   background: var(--color-background-soft);
-  border-bottom: 2px solid var(--color-border);
-  container-type: inline-size;
-  container-name: players-list;
-  /* Centralized entity sizing constants (change here to affect all entity widths) */
-  --entity-min: 80px;
-  --entity-max: 160px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.players-header h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-heading);
 }
 
 .players-container {
-  display: flex;
-  gap: 8px;
   flex: 1;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  /* Spread owner-groups across available width in wide mode */
-  justify-content: space-between;
+  overflow-y: auto;
+  padding: 4px;
 }
 
-/* 
-  Owner Group (player-column) = one player + their characters
-  Layout modes controlled by container queries on .players-list-horizontal
-*/
-.player-column {
+.player-section {
+  margin-bottom: 8px;
+}
+
+.player-item {
   display: flex;
+  align-items: center;
   gap: 4px;
-  box-sizing: border-box;
-  /* Mode 1 (widest): flex-direction: row - player and characters side-by-side */
-  flex-direction: row;
-  align-items: center;
-  /* Flexible sizing: grow/shrink between var(--entity-min) and var(--entity-max) per entity */
-  flex: 1 1 auto;
-  min-width: var(--entity-min);
-}
-
-/* Player Row (entity) */
-.player-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 2px solid;
-  transition: all 0.2s;
-  min-height: 36px;
-  font-weight: 700;
-  white-space: nowrap;
-  box-sizing: border-box;
-  /* Flexible width between var(--entity-min) and var(--entity-max) */
-  flex: 1 1 auto;
-  min-width: var(--entity-min);
-  max-width: var(--entity-max);
-}
-
-/* Characters container */
-.characters-row {
-  display: flex;
-  gap: 4px;
-  flex-wrap: nowrap;
-  flex: 1 1 auto;
-}
-
-/* Character Cell (entity) */
-.character-cell {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border: 2px solid;
+  padding: 4px 6px;
   border-radius: 4px;
+  border: 1px solid;
+  margin-bottom: 2px;
   transition: all 0.2s;
-  min-height: 30px;
-  font-weight: 500;
-  white-space: nowrap;
-  box-sizing: border-box;
-  cursor: pointer;
-  /* Flexible width between var(--entity-min) and var(--entity-max) */
-  flex: 1 1 auto;
-  min-width: var(--entity-min);
-  max-width: var(--entity-max);
 }
 
-.character-cell:hover {
-  opacity: 0.8;
-  transform: translateY(-1px);
-}
-
-/* 
-  Responsive Layout Modes:
-  
-  Mode 1 (default/widest): Single horizontal line
-    All entities (players + characters) flow horizontally side-by-side
-    Each entity flexes between 80-160px
-    
-  Mode 2 (medium): Two-line owner groups
-    Each owner-group has player on top, characters below
-    Owner groups sit side-by-side, wrapping as needed
-    
-  Mode 3 (narrow): Vertical owner groups
-    Owner groups stack vertically
-    Within each group: player on top, characters in horizontal row below
-    
-  Mode 4 (narrowest): Fully vertical
-    Everything stacked vertically, one entity per line
-*/
-
-/* Mode 2: < 600px - Two-line owner groups (player top, characters below) */
-@container players-list (max-width: 599px) {
-  .player-column {
-    flex-direction: column;
-    align-items: stretch;
-    /* Allow owner groups to sit side-by-side when possible */
-    flex: 0 1 auto;
-  }
-  /* In two-line mode keep groups left-aligned so wrapping is predictable */
-  .players-container {
-    justify-content: flex-start;
-  }
-  
-  .player-row {
-    width: 100%;
-    max-width: none;
-  }
-  
-  .characters-row {
-    flex-wrap: wrap;
-    width: 100%;
-  }
-  
-  .character-cell {
-    flex: 1 1 auto;
-  }
-}
-
-/* Mode 3: < 400px - Vertical owner groups (groups stack, characters horizontal within group) */
-@container players-list (max-width: 399px) {
-  .players-container {
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-  }
-  
-  .player-column {
-    width: 100%;
-    flex: 0 0 auto;
-  }
-  
-  .characters-row {
-    flex-wrap: wrap;
-  }
-}
-
-/* Mode 4: < 200px - Fully vertical (one entity per line) */
-@container players-list (max-width: 199px) {
-  .characters-row {
-    flex-direction: column;
-  }
-  
-  .character-cell {
-    width: 100%;
-    max-width: none;
-  }
-  .players-container {
-    justify-content: flex-start;
-  }
-}
-
-/* Local player/character: muted background (not ready) -> murky green (ready) */
-.player-row.is-local.is-not-ready,
-.character-cell.is-local.is-not-ready {
+/* Local player/character states */
+.player-item.is-local.is-not-ready {
   background-color: var(--color-background-mute);
   border-color: var(--vt-c-metallic-accent);
 }
 
-.player-row.is-local.is-ready,
-.character-cell.is-local.is-ready {
+.player-item.is-local.is-ready {
   background-color: var(--color-background-mute);
   border-color: var(--vt-c-ink-green);
 }
 
-/* Remote player/character: darker background (not ready) -> murky green (ready) */
-.player-row.is-remote.is-not-ready,
-.character-cell.is-remote.is-not-ready {
+/* Remote player/character states */
+.player-item.is-remote.is-not-ready {
   background-color: var(--color-background-soft);
   border-color: var(--vt-c-fog);
 }
 
-.player-row.is-remote.is-ready,
-.character-cell.is-remote.is-ready {
+.player-item.is-remote.is-ready {
   background-color: var(--color-background-mute);
   border-color: var(--vt-c-ink-green);
 }
 
-.entity-name {
-  font-size: 13px;
-  color: var(--color-text);
+.player-name {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.player-row .entity-name {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
+  color: var(--color-text);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.2;
 }
 
-.character-cell .entity-name {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--vt-c-fog);
-}
-
-/* Master Badge */
-.master-badge {
-  background: linear-gradient(135deg, var(--vt-c-metallic-accent) 0%, var(--vt-c-ink-green-light) 100%);
-  color: var(--vt-c-white);
-  padding: 2px 6px;
-  border-radius: 4px;
+.master-star {
   font-size: 10px;
-  font-weight: 700;
-  box-shadow: 0 2px 4px var(--vt-c-divider-dark-1);
+  color: var(--vt-c-metallic-accent);
   flex-shrink: 0;
 }
 
-/* Ready Toggle Button (LED style) - only shown for local player/characters */
-.ready-toggle {
+.characters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 8px;
+}
+
+.character-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px;
+  border-radius: 3px;
+  border: 1px solid;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.character-item.is-local.is-not-ready {
+  background-color: var(--color-background-mute);
+  border-color: var(--vt-c-metallic-accent);
+}
+
+.character-item.is-local.is-ready {
+  background-color: var(--color-background-mute);
+  border-color: var(--vt-c-ink-green);
+}
+
+.character-item.is-remote.is-not-ready {
+  background-color: var(--color-background-soft);
+  border-color: var(--vt-c-fog);
+}
+
+.character-item.is-remote.is-ready {
+  background-color: var(--color-background-mute);
+  border-color: var(--vt-c-ink-green);
+}
+
+.character-item:hover {
+  opacity: 0.8;
+}
+
+.character-name {
+  flex: 1;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--vt-c-fog);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.2;
+}
+
+/* Ready LED Button */
+.ready-led {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 12px;
+  height: 12px;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -420,63 +311,43 @@ const readyCount = computed(() => {
   flex-shrink: 0;
 }
 
-.ready-toggle:hover {
-  transform: scale(1.2);
+.ready-led:hover {
+  transform: scale(1.15);
 }
 
-.ready-toggle .led {
-  width: 14px;
-  height: 14px;
+.ready-led .led {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  border: 2px solid;
+  border: 1px solid;
   transition: all 0.2s;
 }
 
-/* LED colors: ALWAYS red or green (never yellow) */
-/* When entity is NOT ready -> LED is GREEN (click to mark ready) */
-.is-not-ready .ready-toggle .led {
+/* LED colors: GREEN when not ready, RED when ready */
+.is-not-ready .ready-led .led {
   background-color: var(--vt-c-ink-green);
   border-color: var(--vt-c-deep-sea);
-  box-shadow: 0 0 8px var(--vt-c-ink-green-light);
+  box-shadow: 0 0 4px var(--vt-c-ink-green-light);
 }
 
-/* When entity IS ready -> LED is RED (click to mark not ready) */
-.is-ready .ready-toggle .led {
+.is-ready .ready-led .led {
   background-color: var(--vt-c-metallic-accent);
   border-color: var(--vt-c-fog);
-  box-shadow: 0 0 8px var(--vt-c-metallic-accent);
+  box-shadow: 0 0 4px var(--vt-c-metallic-accent);
 }
 
 .no-characters {
-  padding: 6px 10px;
-  font-size: 11px;
+  padding: 3px 4px;
+  font-size: 9px;
   color: var(--vt-c-fog);
   font-style: italic;
-  background: var(--color-background-mute);
-  border: 2px solid var(--color-border);
-  border-radius: 4px;
-  min-width: 80px;
 }
 
 .empty-state {
-  padding: 16px;
+  padding: 12px;
+  font-size: 10px;
   color: var(--vt-c-fog);
   font-style: italic;
-}
-
-.players-summary {
-  padding: 8px 16px;
-  background: var(--color-background);
-  border-radius: 6px;
-  border: 2px solid var(--vt-c-ink-green);
-  box-shadow: 0 2px 4px var(--vt-c-divider-light-1);
-  flex-shrink: 0;
-}
-
-.summary-text {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--vt-c-ink-green);
-  white-space: nowrap;
+  text-align: center;
 }
 </style>

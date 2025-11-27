@@ -2,7 +2,10 @@
   <div class="scene-progress">
     <div class="list-header">
       <h3>Scene Progress</h3>
-      <span class="turn-count">{{ turns.length }} turns</span>
+      <div class="header-actions">
+        <span class="turn-count">{{ turns.length }} turns</span>
+        <button @click="emit('close')" class="btn-close" title="Close">✕</button>
+      </div>
     </div>
 
   <div class="turns-container" ref="container">
@@ -70,6 +73,10 @@ interface Character {
 const props = defineProps<{
   turns: Turn[]
   characters: Character[]
+}>()
+
+const emit = defineEmits<{
+  close: []
 }>()
 
 const sortedTurns = computed(() => {
@@ -161,6 +168,12 @@ function formatStatus(status: string) {
   color: var(--color-heading);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .turn-count {
   background: var(--vt-c-metallic-accent);
   color: var(--vt-c-white);
@@ -168,6 +181,27 @@ function formatStatus(status: string) {
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-close:hover {
+  background: var(--color-background-mute);
 }
 
 .turns-container {

@@ -2,7 +2,10 @@
   <div class="realm-chat">
     <div class="chat-header">
       <h3>Realm Chat</h3>
-      <span class="chat-badge">Group</span>
+      <div class="header-actions">
+        <span class="chat-badge">Group</span>
+        <button @click="emit('close')" class="btn-close" title="Close">✕</button>
+      </div>
     </div>
 
     <div class="messages-container" ref="messagesContainer">
@@ -42,6 +45,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   sendMessage: [message: string]
+  close: []
 }>()
 
 const newMessage = ref('')
@@ -103,6 +107,12 @@ watch(
   font-weight: 600;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .chat-badge {
   background: var(--vt-c-divider-light-2);
   padding: 4px 8px;
@@ -110,6 +120,27 @@ watch(
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--vt-c-white);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-close:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .messages-container {

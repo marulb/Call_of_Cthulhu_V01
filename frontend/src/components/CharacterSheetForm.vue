@@ -2,13 +2,13 @@
   <div class="character-sheet-form">
     <!-- Header with actions -->
     <div class="form-header">
-      <h2>{{ character.name || 'New Character' }}</h2>
+      <h3>Character Sheet<!--{{ character.name || 'New Character' }}--></h3>
       <div class="header-actions">
         <button @click="loadFromJSON" class="btn-secondary" title="Load from JSON file">
-          Load JSON
+          Load
         </button>
         <button @click="saveToJSON" class="btn-secondary" title="Save as JSON file">
-          Save JSON
+          Save
         </button>
         <button
           v-if="!readonly"
@@ -18,6 +18,7 @@
         >
           {{ isGameView ? 'Saved' : 'Create Character' }}
         </button>
+        <button v-if="isGameView" @click="emit('close')" class="btn-close" title="Close">✕</button>
       </div>
     </div>
 
@@ -321,6 +322,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   (e: 'update:modelValue', value: Partial<Character>): void
   (e: 'submit', value: Partial<Character>): void
+  (e: 'close'): void
 }>()
 
 // Create a reactive copy of the character
@@ -483,33 +485,62 @@ function saveToJSON() {
 
 <style scoped>
 .character-sheet-form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   background: var(--color-background);
   border-radius: 8px;
-  padding: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
+  box-shadow: 0 2px 4px var(--vt-c-divider-light-1);
+  overflow: hidden;
 }
 
 .form-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid var(--color-border);
+  padding: 16px;
+  background: var(--color-background-soft);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.form-header h2 {
+.form-header h3 {
   margin: 0;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--color-heading);
 }
 
 .header-actions {
   display: flex;
   gap: 12px;
+  align-items: center;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-close:hover {
+  background: var(--color-background-mute);
 }
 
 .form-sections {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 16px;

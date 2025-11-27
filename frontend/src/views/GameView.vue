@@ -6,60 +6,72 @@
       :current-chapter="currentChapter" :master-player-name="masterPlayerName" :players-online-count="socket.playersOnline.value.length"
       :is-connected="socket.connected.value" />
 
-    <!-- Players List - Horizontal at top -->
-    <div class="players-bar" ref="playersBarRef">
-      <PlayersList
-        :players="playersWithDetails"
-        :current-player-id="sessionStore.playerId || ''"
-        :master-player-id="sessionStore.currentSession?.master_player_id"
-        @toggle-ready="handleToggleReady"
-        @character-double-click="handleCharacterDoubleClick"
-      />
-    </div>
+    <!-- Main Layout: Game Content + Right Sidebar -->
+    <div class="main-layout" :class="`layout-${layoutMode}`">
+      <!-- Right Sidebar (visibility list + players) -->
+      <div class="right-sidebar">
+        <!-- Container Visibility List -->
+        <div class="sidebar-section visibility-section">
+          <ContainerVisibilityList
+            :containers="visibilityContainers"
+            @toggle-visibility="toggleContainerVisibility"
+          />
+        </div>
 
-    <!-- Main Game Content: responsive grid controlled by BASE_BREAKPOINT -->
-    <div class="game-content">
-      <div class="game-grid" :class="[`layout-${layoutMode}`, { 'with-sheet': showCharacterSheet }]">
+        <!-- Players List -->
+        <div class="sidebar-section players-section">
+          <PlayersList
+            :players="playersWithDetails"
+            :current-player-id="sessionStore.playerId || ''"
+            :master-player-id="sessionStore.currentSession?.master_player_id"
+            @toggle-ready="handleToggleReady"
+            @character-double-click="handleCharacterDoubleClick"
+          />
+        </div>
+      </div>
+
+      <!-- Main Game Content: responsive grid controlled by BASE_BREAKPOINT -->
+      <div class="game-content">
+      <div class="game-grid" :class="`layout-${layoutMode}`" :style="{
+        gridTemplateAreas,
+        gridTemplateColumns
+      }">
             <!-- Character Sheet (when open) -->
-            <div v-if="showCharacterSheet" class="grid-item sheet" :style="{ gridArea: 'sheet', height: areaHeightPx + 'px' }">
-              <div class="sheet-header">
-                <h2>{{ editingCharacter?.name || 'Character Sheet' }}</h2>
-                <button @click="closeCharacterSheet" class="btn-close" title="Close character sheet">✕</button>
-              </div>
-              <div class="sheet-body">
-                <CharacterSheetForm
-                  v-if="editingCharacter"
-                  v-model="editingCharacter"
-                  :readonly="isCharacterReadOnly"
-                  :is-game-view="true"
-                  @submit="handleCharacterSheetSubmit"
-                />
-              </div>
+            <div v-if="containerVisibility.sheet && showCharacterSheet" class="grid-item sheet" :style="{ gridArea: 'sheet', height: areaHeightPx + 'px' }">
+              <CharacterSheetForm
+                v-if="editingCharacter"
+                v-model="editingCharacter"
+                :readonly="isCharacterReadOnly"
+                :is-game-view="true"
+                @submit="handleCharacterSheetSubmit"
+                @close="closeCharacterSheet"
+              />
             </div>
 
-            <div class="grid-item turn" :style="{ gridArea: 'turn', height: areaHeightPx + 'px' }">
-              <SceneProgress :turns="turns" :characters="sessionStore.selectedCharacters" />
+            <div v-if="containerVisibility.turn" class="grid-item turn" :style="{ gridArea: 'turn', height: areaHeightPx + 'px' }">
+              <SceneProgress :turns="turns" :characters="sessionStore.selectedCharacters" @close="closeContainer('turn')" />
             </div>
 
-            <div class="grid-item action" :style="{ gridArea: 'action', height: areaHeightPx + 'px' }">
+            <div v-if="containerVisibility.action" class="grid-item action" :style="{ gridArea: 'action', height: areaHeightPx + 'px' }">
           <SceneActiveTurn :drafts="actionDrafts" :characters="sessionStore.selectedCharacters" :all-characters="allRealmCharacters" :players="allPlayers"
             :current-player-id="sessionStore.playerId || ''" :session-id="sessionStore.currentSession?.id || ''"
             @create-draft="handleCreateDraft" @update-draft="handleUpdateDraft" @delete-draft="handleDeleteDraft"
             @reorder-drafts="handleReorderDrafts" @submit-turn="handleSubmitTurn"
-            @dungeonmasterResponse="handleDungeonmasterResponse" />
+            @dungeonmasterResponse="handleDungeonmasterResponse" @close="closeContainer('action')" />
         </div>
 
-            <div class="grid-item realm" :style="{ gridArea: 'realm', height: areaHeightPx + 'px' }">
+            <div v-if="containerVisibility.realm" class="grid-item realm" :style="{ gridArea: 'realm', height: areaHeightPx + 'px' }">
           <RealmChat :messages="realmMessages" :current-player-id="sessionStore.playerId || ''"
-            :connected="socket.connected.value" @send-message="handleSendRealmMessage" />
+            :connected="socket.connected.value" @send-message="handleSendRealmMessage" @close="closeContainer('realm')" />
         </div>
 
-                    <div class="grid-item rules" :style="{ gridArea: 'rules', height: areaHeightPx + 'px' }">
+                    <div v-if="containerVisibility.rules" class="grid-item rules" :style="{ gridArea: 'rules', height: areaHeightPx + 'px' }">
                   <ProphetChat :messages="prophetMessages" :connected="socket.connected.value"
-                    :is-waiting-for-response="isWaitingForProphetResponse" @send-message="handleSendProphetMessage" />
+                    :is-waiting-for-response="isWaitingForProphetResponse" @send-message="handleSendProphetMessage" @close="closeContainer('rules')" />
                 </div>
       </div>
     </div>
+    </div><!-- closes main-layout -->
   </div>
 </template>
 
@@ -77,6 +89,8 @@ import SceneProgress from '@/components/SceneProgress.vue'
 import RealmChat from '@/components/RealmChat.vue'
 import ProphetChat from '@/components/ProphetChat.vue'
 import CharacterSheetForm from '@/components/CharacterSheetForm.vue'
+import ContainerVisibilityList from '@/components/ContainerVisibilityList.vue'
+import type { VisibilityContainer } from '@/components/ContainerVisibilityList.vue'
 import type { ActionDraft, Turn, ChatMessage } from '@/types/gameplay'
 
 const router = useRouter()
@@ -100,8 +114,47 @@ let autosaveTimeout: ReturnType<typeof setTimeout> | null = null
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8093'
 
+// Right sidebar width (px) - easily adjustable constant
+const SIDEBAR_WIDTH = 180
+
 // Single base breakpoint (px). Change this value to experiment with layouts.
 const BASE_BREAKPOINT = 600
+
+// Container visibility state
+const containerVisibility = ref<Record<string, boolean>>({
+  sheet: false,
+  turn: true,
+  action: true,
+  realm: true,
+  rules: true
+})
+
+const visibilityContainers = computed<VisibilityContainer[]>(() => [
+  { id: 'sheet', name: 'Character', visible: containerVisibility.value.sheet ?? false },
+  { id: 'turn', name: 'Progress', visible: containerVisibility.value.turn ?? true },
+  { id: 'action', name: 'Active Turn', visible: containerVisibility.value.action ?? true },
+  { id: 'realm', name: 'Realm Chat', visible: containerVisibility.value.realm ?? true },
+  { id: 'rules', name: 'Prophet', visible: containerVisibility.value.rules ?? true }
+])
+
+function toggleContainerVisibility(containerId: string) {
+  if (containerId === 'sheet') {
+    // For character sheet, also close it if it's being hidden
+    if (containerVisibility.value.sheet) {
+      closeCharacterSheet()
+    }
+  } else {
+    containerVisibility.value[containerId] = !containerVisibility.value[containerId]
+  }
+}
+
+function closeContainer(containerId: string) {
+  if (containerId === 'sheet') {
+    closeCharacterSheet()
+  } else {
+    containerVisibility.value[containerId] = false
+  }
+}
 
 // Minimum area height for each grid item (px). If window height is larger, areas will expand.
 const MIN_AREA_HEIGHT = 400
@@ -109,16 +162,10 @@ const MIN_AREA_HEIGHT = 400
 // Reactive width/height and layout mode derived from BASE_BREAKPOINT
 const windowWidth = ref<number>(typeof window !== 'undefined' ? window.innerWidth : 1200)
 const windowHeight = ref<number>(typeof window !== 'undefined' ? window.innerHeight : 800)
-const playersBarRef = ref<HTMLElement | null>(null)
-const playersBarHeight = ref<number>(0)
 
 function updateWidth() {
   windowWidth.value = window.innerWidth
   windowHeight.value = window.innerHeight
-  // Measure players bar height if available
-  if (playersBarRef.value) {
-    playersBarHeight.value = playersBarRef.value.offsetHeight
-  }
 }
 
 const layoutMode = computed(() => {
@@ -127,17 +174,78 @@ const layoutMode = computed(() => {
   return 'large'
 })
 
-// Compute how many rows are visible based on layout mode
-const rowsCount = computed(() => (layoutMode.value === 'small' ? 4 : layoutMode.value === 'medium' ? 2 : 1))
+// Get list of visible containers (excluding sheet if not open)
+const visibleContainers = computed(() => {
+  const containers: string[] = []
+  if (containerVisibility.value.sheet && showCharacterSheet.value) containers.push('sheet')
+  if (containerVisibility.value.turn) containers.push('turn')
+  if (containerVisibility.value.action) containers.push('action')
+  if (containerVisibility.value.realm) containers.push('realm')
+  if (containerVisibility.value.rules) containers.push('rules')
+  return containers
+})
+
+// Dynamically compute grid template areas based on visible containers
+const gridTemplateAreas = computed(() => {
+  const visible = visibleContainers.value
+  if (visible.length === 0) return '""'
+
+  if (layoutMode.value === 'small') {
+    // Stack all vertically
+    return visible.map(c => `"${c}"`).join('\n    ')
+  } else if (layoutMode.value === 'medium') {
+    // 2 columns
+    const rows: string[] = []
+    for (let i = 0; i < visible.length; i += 2) {
+      if (i + 1 < visible.length) {
+        rows.push(`"${visible[i]} ${visible[i + 1]}"`)
+      } else {
+        rows.push(`"${visible[i]} ${visible[i]}"`)
+      }
+    }
+    return rows.join('\n    ')
+  } else {
+    // Large: all side-by-side
+    return `"${visible.join(' ')}"`
+  }
+})
+
+// Dynamically compute grid template columns based on visible containers
+const gridTemplateColumns = computed(() => {
+  const visible = visibleContainers.value
+  if (visible.length === 0) return '1fr'
+
+  if (layoutMode.value === 'small') {
+    return '1fr'
+  } else if (layoutMode.value === 'medium') {
+    return '1fr 1fr'
+  } else {
+    // Large: calculate columns based on container types
+    const cols = visible.map(c => {
+      if (c === 'sheet') return 'minmax(400px, 1.2fr)'
+      return 'minmax(200px, 1fr)'
+    })
+    return cols.join(' ')
+  }
+})
+
+// Compute how many rows are visible based on layout mode and visible containers
+const rowsCount = computed(() => {
+  const count = visibleContainers.value.length
+  if (layoutMode.value === 'small') return count
+  if (layoutMode.value === 'medium') return Math.ceil(count / 2)
+  return 1
+})
 
 // Grid gap used in CSS (px) - must match .game-grid gap
 const GRID_GAP = 16
 
-// Compute available height for the grid (viewport minus players bar and outer paddings)
+// Compute available height for the grid (viewport minus header and main-layout padding)
 const availableGridHeight = computed(() => {
-  // subtract playersBarHeight and some padding (game-content padding top+bottom = 32)
+  // Approximate header height + main-layout padding (top+bottom = 32)
+  const headerHeight = 60
   const padding = 32
-  const h = windowHeight.value - playersBarHeight.value - padding
+  const h = windowHeight.value - headerHeight - padding
   return h > 0 ? h : 0
 })
 
@@ -377,6 +485,7 @@ async function handleCharacterDoubleClick(characterId: string) {
     const character = await charactersAPI.get(characterId)
     editingCharacter.value = character
     showCharacterSheet.value = true
+    containerVisibility.value.sheet = true
   } catch (error) {
     console.error('Error loading character:', error)
     alert('Failed to load character sheet')
@@ -385,6 +494,7 @@ async function handleCharacterDoubleClick(characterId: string) {
 
 function closeCharacterSheet() {
   showCharacterSheet.value = false
+  containerVisibility.value.sheet = false
   editingCharacter.value = null
   if (autosaveTimeout) {
     clearTimeout(autosaveTimeout)
@@ -709,10 +819,74 @@ function handleSendProphetMessage(message: string) {
   background: var(--color-background-soft);
 }
 
-.players-bar {
+/* Main layout container: game content + right sidebar */
+.main-layout {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  overflow: hidden;
+}
+
+/* Small layout: sidebar on top, game content below */
+.main-layout.layout-small {
+  flex-direction: column;
+}
+
+/* Medium and large layouts: sidebar on right */
+.main-layout.layout-medium,
+.main-layout.layout-large {
+  flex-direction: row;
+}
+
+/* Right sidebar: contains visibility list + players */
+.right-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Small layout: sidebar full width on top */
+.layout-small .right-sidebar {
+  width: 100%;
+  flex-direction: row;
+  max-height: 200px;
+}
+
+/* Medium/Large layouts: sidebar fixed width on right */
+.layout-medium .right-sidebar,
+.layout-large .right-sidebar {
+  width: 120px;
+  max-height: none;
+}
+
+.sidebar-section {
   background: var(--color-background);
-  border-bottom: 2px solid var(--color-border);
-  padding: 12px 16px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Small layout: sections side by side */
+.layout-small .sidebar-section {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Medium/Large layouts: sections stacked */
+.layout-medium .sidebar-section,
+.layout-large .sidebar-section {
+  width: 100%;
+}
+
+.visibility-section {
+  flex-shrink: 0;
+}
+
+.players-section {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .game-content {
@@ -720,8 +894,7 @@ function handleSendProphetMessage(message: string) {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px;
-  width: 100%;
+  min-width: 0;
 }
 
 /* Grid container that will change layout based on computed layoutMode class */
@@ -730,54 +903,7 @@ function handleSendProphetMessage(message: string) {
   gap: 16px;
   width: 100%;
   align-items: start;
-}
-
-/* Small: all stacked vertically (<= BASE_BREAKPOINT) */
-.layout-small {
-  grid-template-columns: 1fr;
-  grid-template-areas:
-    "turn"
-    "action"
-    "realm"
-    "rules";
-}
-
-/* Small with character sheet: sheet at top */
-.layout-small.with-sheet {
-  grid-template-areas:
-    "sheet"
-    "turn"
-    "action"
-    "realm"
-    "rules";
-}
-
-/* Medium: two-by-two (<= BASE_BREAKPOINT * 2) */
-.layout-medium {
-  grid-template-columns: 1fr 1fr;
-  grid-template-areas:
-    "turn action"
-    "realm rules";
-}
-
-/* Medium with character sheet: sheet spans top row */
-.layout-medium.with-sheet {
-  grid-template-areas:
-    "sheet sheet"
-    "turn action"
-    "realm rules";
-}
-
-/* Large: all side-by-side */
-.layout-large {
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-areas: "turn action realm rules";
-}
-
-/* Large with character sheet: 5 columns with sheet on left */
-.layout-large.with-sheet {
-  grid-template-columns: minmax(400px, 1.2fr) repeat(4, minmax(200px, 1fr));
-  grid-template-areas: "sheet turn action realm rules";
+  /* grid-template-areas and grid-template-columns are set dynamically via :style */
 }
 
 .grid-item {
@@ -812,32 +938,32 @@ function handleSendProphetMessage(message: string) {
   overflow: hidden;
 }
 
-.sheet-header {
+.grid-item.sheet .list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 16px;
   background: var(--color-background-soft);
-  border-bottom: 2px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 
-.sheet-header h2 {
+.grid-item.sheet .list-header h3 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--color-heading);
 }
 
-.sheet-header .btn-close {
+.grid-item.sheet .btn-close {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 20px;
   color: var(--color-text);
   cursor: pointer;
   padding: 0;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -846,14 +972,7 @@ function handleSendProphetMessage(message: string) {
   flex-shrink: 0;
 }
 
-.sheet-header .btn-close:hover {
+.grid-item.sheet .btn-close:hover {
   background: var(--color-background-mute);
-}
-
-.sheet-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0;
-  min-height: 0;
 }
 </style>
