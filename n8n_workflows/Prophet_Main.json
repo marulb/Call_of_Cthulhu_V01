@@ -53,7 +53,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Extract intent from LLM response\nconst ollamaResponse = $json.message?.content || $json.response || '';\nconst intent = ollamaResponse.trim().toUpperCase();\n\n// Valid intents\nconst validIntents = ['RULES_LOOKUP', 'CHARACTER_INFO', 'GAME_HISTORY', 'DICE_CALCULATION', 'LORE_KNOWLEDGE', 'MULTI_STEP'];\n\n// Default to MULTI_STEP if unrecognized\nconst finalIntent = validIntents.includes(intent) ? intent : 'MULTI_STEP';\n\n// Carry forward all context\nconst previousData = $input.first().json;\n\nreturn [\n  {\n    json: {\n      ...previousData,\n      intent: finalIntent\n    }\n  }\n];"
+        "jsCode": "// Extract intent from LLM response\nconst ollamaResponse = $json.message?.content || $json.response || '';\nconst intent = ollamaResponse.trim().toUpperCase();\n\n// Valid intents\nconst validIntents = ['RULES_LOOKUP', 'CHARACTER_INFO', 'GAME_HISTORY', 'DICE_CALCULATION', 'LORE_KNOWLEDGE', 'MULTI_STEP'];\n\n// Default to MULTI_STEP if unrecognized\nconst finalIntent = validIntents.includes(intent) ? intent : 'MULTI_STEP';\n\n// Get original context from Extract Context node\nconst originalContext = $('Extract Context').first().json;\n\nreturn [\n  {\n    json: {\n      ...originalContext,\n      intent: finalIntent\n    }\n  }\n];"
       },
       "id": "d4e5f6a7-b8c9-0123-def0-234567890123",
       "name": "Parse Intent",
@@ -210,7 +210,13 @@
     },
     {
       "parameters": {
-        "workflowId": "={{ 'y55TmujQLP0CCW1G' }}",
+        "workflowId": {
+          "__rl": true,
+          "value": "y55TmujQLP0CCW1G",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/y55TmujQLP0CCW1G",
+          "cachedResultName": "MongoDB Query SubWF"
+        },
         "options": {}
       },
       "id": "a7b8c9d0-e1f2-3456-0123-567890123456",
@@ -237,7 +243,13 @@
     },
     {
       "parameters": {
-        "workflowId": "={{ 'RujcKBHIYtoxE5H4' }}",
+        "workflowId": {
+          "__rl": true,
+          "value": "RujcKBHIYtoxE5H4",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/RujcKBHIYtoxE5H4",
+          "cachedResultName": "Qdrant RAG SubWF"
+        },
         "options": {}
       },
       "id": "c9d0e1f2-a3b4-5678-2345-789012345678",
@@ -264,7 +276,13 @@
     },
     {
       "parameters": {
-        "workflowId": "={{ 'y55TmujQLP0CCW1G' }}",
+        "workflowId": {
+          "__rl": true,
+          "value": "y55TmujQLP0CCW1G",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/y55TmujQLP0CCW1G",
+          "cachedResultName": "MongoDB Query SubWF"
+        },
         "options": {}
       },
       "id": "e1f2a3b4-c5d6-7890-4567-901234567890",
@@ -291,7 +309,13 @@
     },
     {
       "parameters": {
-        "workflowId": "={{ '6XlcM8xBgOmhxIpM' }}",
+        "workflowId": {
+          "__rl": true,
+          "value": "6XlcM8xBgOmhxIpM",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/6XlcM8xBgOmhxIpM",
+          "cachedResultName": "Dice Roller SubWF"
+        },
         "options": {}
       },
       "id": "a3b4c5d6-e7f8-9012-6789-123456789012",
@@ -318,7 +342,13 @@
     },
     {
       "parameters": {
-        "workflowId": "={{ 'RujcKBHIYtoxE5H4' }}",
+        "workflowId": {
+          "__rl": true,
+          "value": "RujcKBHIYtoxE5H4",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/RujcKBHIYtoxE5H4",
+          "cachedResultName": "Qdrant RAG SubWF"
+        },
         "options": {}
       },
       "id": "c5d6e7f8-a9b0-1234-8901-345678901234",
@@ -378,7 +408,13 @@
     },
     {
       "parameters": {
-        "workflowId": "={{ 'l0qIOBJbnkSQagfu' }}",
+        "workflowId": {
+          "__rl": true,
+          "value": "l0qIOBJbnkSQagfu",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/l0qIOBJbnkSQagfu",
+          "cachedResultName": "LLM Synthesizer SubWF"
+        },
         "options": {}
       },
       "id": "a9b0c1d2-e3f4-5678-2345-789012345678",
