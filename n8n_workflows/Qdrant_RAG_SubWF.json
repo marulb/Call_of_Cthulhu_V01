@@ -1,0 +1,156 @@
+{
+  "name": "Qdrant RAG SubWF",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/embeddings",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "nomic-embed-text"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.query }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "generate-embedding",
+      "name": "Generate Embedding (Ollama)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract embedding vector from Ollama response\nconst embedding = $json.embedding;\nconst query = $input.first().json.query;\nconst collection = $input.first().json.collection || 'Cthulhu_Wiki';\nconst limit = $input.first().json.limit || 5;\n\nreturn [\n  {\n    json: {\n      embedding,\n      query,\n      collection,\n      limit\n    }\n  }\n];"
+      },
+      "id": "prepare-qdrant-query",
+      "name": "Prepare Qdrant Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://qdrant:6333/collections/{{ $json.collection }}/points/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  vector: $json.embedding,\n  limit: $json.limit,\n  with_payload: true,\n  with_vector: false\n}) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "query-qdrant",
+      "name": "Query Qdrant",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [840, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract chunks from Qdrant response\nconst qdrantResults = $json.result || [];\nconst chunks = [];\nconst references = [];\nconst seenSources = new Set();\n\nfor (const hit of qdrantResults) {\n  const payload = hit.payload || {};\n  const text = payload.text || payload.content || '';\n  const source = payload.source || payload.metadata?.source || 'Unknown';\n  const score = hit.score || 0;\n\n  if (text) {\n    chunks.push({\n      text,\n      source,\n      score\n    });\n\n    // Deduplicate references\n    if (!seenSources.has(source)) {\n      references.push(source);\n      seenSources.add(source);\n    }\n  }\n}\n\nreturn [\n  {\n    json: {\n      chunks,\n      references,\n      total_chunks: chunks.length\n    }\n  }\n];"
+      },
+      "id": "extract-chunks",
+      "name": "Extract Chunks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "respond-to-workflow",
+      "name": "Respond to Workflow",
+      "type": "n8n-nodes-base.respondToWorkflow",
+      "typeVersion": 1,
+      "position": [1240, 300]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Generate Embedding (Ollama)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Embedding (Ollama)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Qdrant Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Qdrant Query": {
+      "main": [
+        [
+          {
+            "node": "Query Qdrant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Qdrant": {
+      "main": [
+        [
+          {
+            "node": "Extract Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Chunks": {
+      "main": [
+        [
+          {
+            "node": "Respond to Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "qdrant-rag-subwf",
+  "meta": {
+    "instanceId": "call-of-cthulhu-n8n"
+  },
+  "tags": []
+}

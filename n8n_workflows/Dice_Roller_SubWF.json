@@ -1,0 +1,207 @@
+{
+  "name": "Dice Roller SubWF",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.roll_type }}",
+                    "rightValue": "standard",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "standard"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.roll_type }}",
+                    "rightValue": "percentage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "percentage"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.roll_type }}",
+                    "rightValue": "skill_check",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "skill_check"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "roll-type-router",
+      "name": "Roll Type Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Roll standard dice expression like \"1D6+2D4-2\"\n * Ported from diceRoller.js\n */\nfunction rollDiceExpression(expression) {\n  const cleanExpression = expression.toUpperCase().replace(/\\s+/g, '');\n  const diceRegex = /(\\d+)D(\\d+)/g;\n  const modRegex = /([+-](?!\\d*D)\\d+)/g;\n  \n  let total = 0;\n  let modTotal = 0;\n  let output = [];\n  \n  // Roll all dice\n  let diceMatch;\n  while ((diceMatch = diceRegex.exec(cleanExpression)) !== null) {\n    const num = parseInt(diceMatch[1]);\n    const sides = parseInt(diceMatch[2]);\n    let diceRolls = [];\n    let diceTotal = 0;\n    \n    for (let i = 0; i < num; i++) {\n      const roll = Math.floor(Math.random() * sides) + 1;\n      diceRolls.push(roll);\n      diceTotal += roll;\n    }\n    \n    total += diceTotal;\n    output.push({\n      type: `${num}D${sides}`,\n      rolls: diceRolls,\n      subtotal: diceTotal\n    });\n  }\n  \n  // Apply modifiers\n  let modMatch;\n  while ((modMatch = modRegex.exec(cleanExpression)) !== null) {\n    const mod = parseInt(modMatch[1]);\n    modTotal += mod;\n  }\n  \n  total += modTotal;\n  \n  return {\n    total: total,\n    rolls: output,\n    modifier: modTotal,\n    expression: expression\n  };\n}\n\nconst expression = $json.expression || '1D100';\nconst result = rollDiceExpression(expression);\n\n// Format for display\nlet formattedParts = [];\nresult.rolls.forEach(roll => {\n  formattedParts.push(`${roll.type}: [${roll.rolls.join(', ')}] = ${roll.subtotal}`);\n});\n\nif (result.modifier !== 0) {\n  formattedParts.push(`Modifier: ${result.modifier > 0 ? '+' : ''}${result.modifier}`);\n}\n\nformattedParts.push(`Total: ${result.total}`);\n\nreturn [\n  {\n    json: {\n      ...result,\n      formatted: formattedParts.join('\\n'),\n      roll_type: 'standard'\n    }\n  }\n];"
+      },
+      "id": "standard-dice-roller",
+      "name": "Standard Dice Roller",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Roll percentage dice (D100) with bonus/penalty dice\n * Ported from diceRoller.js\n */\nfunction rollPercentDice(numBonus = 0, numPenalty = 0) {\n  const tens = Math.floor(Math.random() * 10) * 10;\n  const units = Math.floor(Math.random() * 10);\n  const diff = numBonus - numPenalty;\n  \n  let effectiveBonus = 0;\n  let effectivePenalty = 0;\n  let bonusRolls = [];\n  let penaltyRolls = [];\n  \n  if (diff > 0) {\n    effectiveBonus = diff;\n    for (let i = 0; i < effectiveBonus; i++) {\n      bonusRolls.push(Math.floor(Math.random() * 10) * 10);\n    }\n  } else if (diff < 0) {\n    effectivePenalty = -diff;\n    for (let i = 0; i < effectivePenalty; i++) {\n      penaltyRolls.push(Math.floor(Math.random() * 10) * 10);\n    }\n  }\n  \n  let finalTens = tens;\n  if (effectiveBonus > 0) {\n    finalTens = Math.min(tens, ...bonusRolls);\n  } else if (effectivePenalty > 0) {\n    finalTens = Math.max(tens, ...penaltyRolls);\n  }\n  \n  const result = finalTens + units;\n  const displayResult = result === 0 ? 100 : result;\n  \n  return {\n    result: displayResult,\n    tens: tens,\n    units: units,\n    bonusRolls: bonusRolls,\n    penaltyRolls: penaltyRolls,\n    effectiveBonus: effectiveBonus,\n    effectivePenalty: effectivePenalty\n  };\n}\n\nconst bonusDice = parseInt($json.bonus_dice) || 0;\nconst penaltyDice = parseInt($json.penalty_dice) || 0;\n\nconst result = rollPercentDice(bonusDice, penaltyDice);\n\n// Format for display\nlet formattedParts = [];\nformattedParts.push(`Tens: ${result.tens}`);\nformattedParts.push(`Units: ${result.units}`);\n\nif (result.effectiveBonus > 0) {\n  formattedParts.push(`Bonus rolls: [${result.bonusRolls.join(', ')}]`);\n}\n\nif (result.effectivePenalty > 0) {\n  formattedParts.push(`Penalty rolls: [${result.penaltyRolls.join(', ')}]`);\n}\n\nformattedParts.push(`Result: ${result.result}`);\n\nreturn [\n  {\n    json: {\n      ...result,\n      formatted: formattedParts.join('\\n'),\n      roll_type: 'percentage'\n    }\n  }\n];"
+      },
+      "id": "percentage-dice-roller",
+      "name": "Percentage Dice Roller",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 320]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Roll skill check with percentage dice\n * Determines success/failure based on skill value\n */\nfunction rollPercentDice(numBonus = 0, numPenalty = 0) {\n  const tens = Math.floor(Math.random() * 10) * 10;\n  const units = Math.floor(Math.random() * 10);\n  const diff = numBonus - numPenalty;\n  \n  let effectiveBonus = 0;\n  let effectivePenalty = 0;\n  let bonusRolls = [];\n  let penaltyRolls = [];\n  \n  if (diff > 0) {\n    effectiveBonus = diff;\n    for (let i = 0; i < effectiveBonus; i++) {\n      bonusRolls.push(Math.floor(Math.random() * 10) * 10);\n    }\n  } else if (diff < 0) {\n    effectivePenalty = -diff;\n    for (let i = 0; i < effectivePenalty; i++) {\n      penaltyRolls.push(Math.floor(Math.random() * 10) * 10);\n    }\n  }\n  \n  let finalTens = tens;\n  if (effectiveBonus > 0) {\n    finalTens = Math.min(tens, ...bonusRolls);\n  } else if (effectivePenalty > 0) {\n    finalTens = Math.max(tens, ...penaltyRolls);\n  }\n  \n  const result = finalTens + units;\n  const displayResult = result === 0 ? 100 : result;\n  \n  return {\n    result: displayResult,\n    tens: tens,\n    units: units,\n    bonusRolls: bonusRolls,\n    penaltyRolls: penaltyRolls,\n    effectiveBonus: effectiveBonus,\n    effectivePenalty: effectivePenalty\n  };\n}\n\nconst skillName = $json.skill_name || 'Unknown Skill';\nconst skillValue = parseInt($json.skill_value) || 0;\nconst bonusDice = parseInt($json.bonus_dice) || 0;\nconst penaltyDice = parseInt($json.penalty_dice) || 0;\nconst difficulty = $json.difficulty || 'Regular';\n\nconst diceResult = rollPercentDice(bonusDice, penaltyDice);\n\n// Determine success level\nconst roll = diceResult.result;\nlet successLevel = 'Failure';\nlet targetValue = skillValue;\n\n// Apply difficulty modifiers\nif (difficulty === 'Hard') {\n  targetValue = Math.floor(skillValue / 2);\n} else if (difficulty === 'Extreme') {\n  targetValue = Math.floor(skillValue / 5);\n}\n\n// Check for critical success/fumble\nif (roll === 1) {\n  successLevel = 'Critical Success';\n} else if (roll === 100 || (roll >= 96 && skillValue < 50)) {\n  successLevel = 'Fumble';\n} else if (roll <= targetValue) {\n  // Determine success level\n  if (roll <= Math.floor(skillValue / 5)) {\n    successLevel = 'Extreme Success';\n  } else if (roll <= Math.floor(skillValue / 2)) {\n    successLevel = 'Hard Success';\n  } else {\n    successLevel = 'Success';\n  }\n} else {\n  successLevel = 'Failure';\n}\n\n// Format for display\nlet formattedParts = [];\nformattedParts.push(`Skill: ${skillName} (${skillValue}%)`);\nformattedParts.push(`Difficulty: ${difficulty} (target: ${targetValue}%)`);\nformattedParts.push(`Rolled: ${roll}`);\n\nif (diceResult.effectiveBonus > 0) {\n  formattedParts.push(`Bonus dice: [${diceResult.bonusRolls.join(', ')}]`);\n}\n\nif (diceResult.effectivePenalty > 0) {\n  formattedParts.push(`Penalty dice: [${diceResult.penaltyRolls.join(', ')}]`);\n}\n\nformattedParts.push(`Result: ${successLevel}`);\n\nreturn [\n  {\n    json: {\n      skill_name: skillName,\n      skill_value: skillValue,\n      difficulty: difficulty,\n      target_value: targetValue,\n      rolled: roll,\n      success_level: successLevel,\n      success: ['Success', 'Hard Success', 'Extreme Success', 'Critical Success'].includes(successLevel),\n      formatted: formattedParts.join('\\n'),\n      roll_details: diceResult,\n      roll_type: 'skill_check'\n    }\n  }\n];"
+      },
+      "id": "skill-check-roller",
+      "name": "Skill Check Roller",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 440]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "respond-to-workflow",
+      "name": "Respond to Workflow",
+      "type": "n8n-nodes-base.respondToWorkflow",
+      "typeVersion": 1,
+      "position": [920, 320]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Roll Type Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Roll Type Router": {
+      "main": [
+        [
+          {
+            "node": "Standard Dice Roller",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Percentage Dice Roller",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skill Check Roller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Standard Dice Roller": {
+      "main": [
+        [
+          {
+            "node": "Respond to Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Percentage Dice Roller": {
+      "main": [
+        [
+          {
+            "node": "Respond to Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skill Check Roller": {
+      "main": [
+        [
+          {
+            "node": "Respond to Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "dice-roller-subwf",
+  "meta": {
+    "instanceId": "call-of-cthulhu-n8n"
+  },
+  "tags": []
+}

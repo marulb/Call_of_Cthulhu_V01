@@ -1,16 +1,13 @@
 <template>
   <div class="session-header">
     <div class="session-main-info">
-      <div class="session-title">
-        <h1>{{ campaignName }}</h1>
-        <div class="session-meta">
-          <span class="realm-name">{{ realmName }}</span>
-          <span class="separator">•</span>
-          <span class="session-number">Session #{{ sessionNumber }}</span>
-          <span v-if="currentChapter" class="separator">•</span>
-          <span v-if="currentChapter" class="chapter-name">{{ currentChapter }}</span>
-        </div>
-      </div>
+      <h1>{{ campaignName }}</h1>
+      <span class="separator">•</span>
+      <span class="realm-name">{{ realmName }}</span>
+      <span class="separator">•</span>
+      <span class="session-number">Session #{{ sessionNumber }}</span>
+      <span v-if="currentChapter" class="separator">•</span>
+      <span v-if="currentChapter" class="chapter-name">{{ currentChapter }}</span>
     </div>
 
     <div class="session-status">
@@ -58,27 +55,24 @@ const props = defineProps<{
   align-items: center;
   background: var(--vt-c-black-soft);
   color: var(--vt-c-text-dark-1);
-  padding: 16px 24px;
+  padding: 10px 24px;
   box-shadow: 0 2px 8px var(--vt-c-divider-dark-1);
 }
 
 .session-main-info {
-  flex: 1;
-}
-
-.session-title h1 {
-  margin: 0 0 6px 0;
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--color-heading);
-}
-
-.session-meta {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  flex: 1;
+  font-size: 13px;
   color: var(--vt-c-fog);
+}
+
+.session-main-info h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-heading);
 }
 
 .realm-name {
