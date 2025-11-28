@@ -1,0 +1,700 @@
+{
+  "name": "Prophet Main",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "coc_prophet",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Webhook - Prophet",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        240
+      ],
+      "webhookId": "coc-prophet-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and validate incoming request\nconst body = $json.body || $json;\nconst question = body.question || '';\nconst playerId = body.player_id || '';\nconst sessionId = body.session_id || null;\nconst campaignId = body.campaign_id || null;\nconst characterIds = body.character_ids || [];\n\nif (!question || !playerId) {\n  throw new Error('Missing required fields: question and player_id');\n}\n\nreturn [\n  {\n    json: {\n      question,\n      player_id: playerId,\n      session_id: sessionId,\n      campaign_id: campaignId,\n      character_ids: characterIds,\n      iteration_count: 0,\n      max_iterations: 5,\n      collected_data: {},\n      references: []\n    }\n  }\n];"
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Extract Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: 'gpt-oss:20b',\n  messages: [\n    {\n      role: 'system',\n      content: `You are an intent classifier for the Prophet AI assistant. Classify the user's question into ONE of these categories:\n\nRULES_LOOKUP: Questions about game rules, mechanics, skill checks, combat\nCHARACTER_INFO: Questions about character stats, sanity, HP, skills, inventory\nGAME_HISTORY: Questions about past turns, scenes, sessions, what happened before\nDICE_CALCULATION: Direct dice roll requests (\"roll 3d6\", \"make a spot hidden check\")\nLORE_KNOWLEDGE: Questions about mythos, monsters, locations, campaign setting\nMULTI_STEP: Complex questions requiring multiple lookups or reasoning\n\nRespond with ONLY the category name, nothing else.`\n    },\n    {\n      role: 'user',\n      content: $json.question\n    }\n  ],\n  stream: false,\n  options: {\n    temperature: 0.1,\n    num_predict: 50\n  }\n}) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "Intent Classifier",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -416,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract intent from LLM response\nconst ollamaResponse = $json.message?.content || $json.response || '';\nconst intent = ollamaResponse.trim().toUpperCase();\n\n// Valid intents\nconst validIntents = ['RULES_LOOKUP', 'CHARACTER_INFO', 'GAME_HISTORY', 'DICE_CALCULATION', 'LORE_KNOWLEDGE', 'MULTI_STEP'];\n\n// Default to MULTI_STEP if unrecognized\nconst finalIntent = validIntents.includes(intent) ? intent : 'MULTI_STEP';\n\n// Carry forward all context\nconst previousData = $input.first().json;\n\nreturn [\n  {\n    json: {\n      ...previousData,\n      intent: finalIntent\n    }\n  }\n];"
+      },
+      "id": "d4e5f6a7-b8c9-0123-def0-234567890123",
+      "name": "Parse Intent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "RULES_LOOKUP",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "rules_lookup"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "CHARACTER_INFO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "character_info"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "GAME_HISTORY",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "game_history"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "DICE_CALCULATION",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "dice_calculation"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "LORE_KNOWLEDGE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "lore_knowledge"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "MULTI_STEP",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "multi_step"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e5f6a7b8-c9d0-1234-ef01-345678901234",
+      "name": "Intent Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -32,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fetch characters from MongoDB\nconst characterIds = $json.character_ids || [];\n\nreturn [\n  {\n    json: {\n      query_type: 'character',\n      filters: characterIds.length > 0 ? { id: { $in: characterIds } } : {}\n    }\n  }\n];"
+      },
+      "id": "f6a7b8c9-d0e1-2345-f012-456789012345",
+      "name": "Prepare Character Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "={{ 'y55TmujQLP0CCW1G' }}",
+        "options": {}
+      },
+      "id": "a7b8c9d0-e1f2-3456-0123-567890123456",
+      "name": "MongoDB Query - Characters",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare Qdrant query for rules lookup\nconst question = $json.question || '';\n\nreturn [\n  {\n    json: {\n      query: question,\n      collection: 'Cthulhu_Wiki',\n      limit: 5\n    }\n  }\n];"
+      },
+      "id": "b8c9d0e1-f2a3-4567-1234-678901234567",
+      "name": "Prepare Rules Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "={{ 'RujcKBHIYtoxE5H4' }}",
+        "options": {}
+      },
+      "id": "c9d0e1f2-a3b4-5678-2345-789012345678",
+      "name": "Qdrant RAG - Rules",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fetch turn history from MongoDB\nconst sessionId = $json.session_id;\n\nif (!sessionId) {\n  return [{\n    json: {\n      query_type: 'turn',\n      filters: {}\n    }\n  }];\n}\n\nreturn [\n  {\n    json: {\n      query_type: 'turn',\n      filters: { session_id: sessionId }\n    }\n  }\n];"
+      },
+      "id": "d0e1f2a3-b4c5-6789-3456-890123456789",
+      "name": "Prepare History Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "={{ 'y55TmujQLP0CCW1G' }}",
+        "options": {}
+      },
+      "id": "e1f2a3b4-c5d6-7890-4567-901234567890",
+      "name": "MongoDB Query - History",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse dice expression from question\nconst question = $json.question || '';\n\n// Simple regex to detect dice expressions\nconst standardDiceRegex = /(\\d+)d(\\d+)([+-]\\d+)?/i;\nconst skillCheckRegex = /(make|roll)\\s+(a\\s+)?(\\w+\\s*\\w*)\\s+(check|roll)/i;\n\nlet rollType = 'standard';\nlet expression = '1d100';\nlet skillName = null;\n\nif (!question) {\n  throw new Error('No question provided for dice roll');\n}\n\n// Check for skill check\nconst skillMatch = question.match(skillCheckRegex);\nif (skillMatch) {\n  rollType = 'skill_check';\n  skillName = skillMatch[3];\n} else {\n  // Check for standard dice\n  const diceMatch = question.match(standardDiceRegex);\n  if (diceMatch) {\n    expression = diceMatch[0];\n  }\n}\n\nreturn [\n  {\n    json: {\n      roll_type: rollType,\n      expression: expression,\n      skill_name: skillName\n    }\n  }\n];"
+      },
+      "id": "f2a3b4c5-d6e7-8901-5678-012345678901",
+      "name": "Parse Dice Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "={{ '6XlcM8xBgOmhxIpM' }}",
+        "options": {}
+      },
+      "id": "a3b4c5d6-e7f8-9012-6789-123456789012",
+      "name": "Dice Roller",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare Qdrant query for lore lookup\nconst question = $json.question || '';\n\nreturn [\n  {\n    json: {\n      query: question,\n      collection: 'Cthulhu_Wiki',\n      limit: 5\n    }\n  }\n];"
+      },
+      "id": "b4c5d6e7-f8a9-0123-7890-234567890123",
+      "name": "Prepare Lore Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "={{ 'RujcKBHIYtoxE5H4' }}",
+        "options": {}
+      },
+      "id": "c5d6e7f8-a9b0-1234-8901-345678901234",
+      "name": "Qdrant RAG - Lore",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Multi-step orchestrator - determine next steps\nconst context = $input.first().json;\nconst iterationCount = context.iteration_count || 0;\nconst maxIterations = context.max_iterations || 5;\n\n// Stop if max iterations reached\nif (iterationCount >= maxIterations) {\n  return [\n    {\n      json: {\n        ...context,\n        stop_iteration: true,\n        reason: 'Max iterations reached'\n      }\n    }\n  ];\n}\n\n// Use LLM to determine what data is needed\nreturn [\n  {\n    json: {\n      ...context,\n      iteration_count: iterationCount + 1,\n      need_analysis: true\n    }\n  }\n];"
+      },
+      "id": "d6e7f8a9-b0c1-2345-9012-456789012345",
+      "name": "Multi-Step Orchestrator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: 'gpt-oss:20b',\n  messages: [\n    {\n      role: 'system',\n      content: `You are a data requirements analyzer. Given a question and already collected data, determine what additional data is needed. Respond in JSON format:\n{\n  \"needs_characters\": true/false,\n  \"needs_rules\": true/false,\n  \"needs_history\": true/false,\n  \"needs_lore\": true/false,\n  \"ready_to_answer\": true/false,\n  \"reasoning\": \"explanation\"\n}`\n    },\n    {\n      role: 'user',\n      content: `Question: ${$json.question}\\n\\nAlready collected: ${JSON.stringify($json.collected_data, null, 2)}`\n    }\n  ],\n  stream: false,\n  options: {\n    temperature: 0.2,\n    num_predict: 200\n  }\n}) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "e7f8a9b0-c1d2-3456-0123-567890123456",
+      "name": "Analyze Data Needs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge all collected data from different paths\nconst allItems = $input.all();\nconst firstItem = $input.first().json;\n\nlet collectedData = firstItem.collected_data || {};\nlet references = firstItem.references || [];\n\n// Merge data from MongoDB queries\nfor (const item of allItems) {\n  const data = item.json.data;\n  const refs = item.json.references || [];\n  const queryType = item.json.query_type;\n\n  if (data && queryType) {\n    if (queryType === 'character') {\n      collectedData.characters = data;\n    } else if (queryType === 'turn') {\n      collectedData.turns = data;\n    } else if (queryType === 'campaign') {\n      collectedData.campaign = data[0] || null;\n    }\n  }\n\n  // Merge chunks from Qdrant\n  if (item.json.chunks) {\n    collectedData.rules_chunks = collectedData.rules_chunks || [];\n    collectedData.rules_chunks.push(...item.json.chunks);\n  }\n\n  // Merge references\n  references.push(...refs);\n}\n\n// Deduplicate references\nreferences = [...new Set(references)];\n\nreturn [\n  {\n    json: {\n      ...firstItem,\n      collected_data: collectedData,\n      references: references\n    }\n  }\n];"
+      },
+      "id": "f8a9b0c1-d2e3-4567-1234-678901234567",
+      "name": "Merge Collected Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "={{ 'l0qIOBJbnkSQagfu' }}",
+        "options": {}
+      },
+      "id": "a9b0c1d2-e3f4-5678-2345-789012345678",
+      "name": "LLM Synthesizer",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        816,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format final response\nconst answer = $json.answer || 'I apologize, but I was unable to generate an answer.';\nconst references = $json.references || [];\n\nreturn [\n  {\n    json: {\n      output: answer,\n      references: references\n    }\n  }\n];"
+      },
+      "id": "b0c1d2e3-f4a5-6789-3456-890123456789",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c1d2e3f4-a5b6-7890-4567-901234567890",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1232,
+        240
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Prophet": {
+      "main": [
+        [
+          {
+            "node": "Extract Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Context": {
+      "main": [
+        [
+          {
+            "node": "Intent Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intent Classifier": {
+      "main": [
+        [
+          {
+            "node": "Parse Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Intent": {
+      "main": [
+        [
+          {
+            "node": "Intent Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intent Router": {
+      "main": [
+        [
+          {
+            "node": "Prepare Rules Query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Character Query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare History Query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parse Dice Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Lore Query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Multi-Step Orchestrator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Character Query": {
+      "main": [
+        [
+          {
+            "node": "MongoDB Query - Characters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB Query - Characters": {
+      "main": [
+        [
+          {
+            "node": "Merge Collected Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Rules Query": {
+      "main": [
+        [
+          {
+            "node": "Qdrant RAG - Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant RAG - Rules": {
+      "main": [
+        [
+          {
+            "node": "Merge Collected Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare History Query": {
+      "main": [
+        [
+          {
+            "node": "MongoDB Query - History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB Query - History": {
+      "main": [
+        [
+          {
+            "node": "Merge Collected Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Dice Request": {
+      "main": [
+        [
+          {
+            "node": "Dice Roller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dice Roller": {
+      "main": [
+        [
+          {
+            "node": "Merge Collected Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Lore Query": {
+      "main": [
+        [
+          {
+            "node": "Qdrant RAG - Lore",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant RAG - Lore": {
+      "main": [
+        [
+          {
+            "node": "Merge Collected Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Multi-Step Orchestrator": {
+      "main": [
+        [
+          {
+            "node": "Analyze Data Needs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Data Needs": {
+      "main": [
+        [
+          {
+            "node": "Merge Collected Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Collected Data": {
+      "main": [
+        [
+          {
+            "node": "LLM Synthesizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Synthesizer": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "prophet-main-v1",
+  "meta": {
+    "instanceId": "00a8bc7dcc0678a45156c17552244c5fb9e78ff325baae937e09d98a3453ca71"
+  },
+  "id": "ProphetMainWorkflow",
+  "tags": []
+}

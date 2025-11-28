@@ -42,17 +42,24 @@ This directory contains modular n8n workflows for the Call of Cthulhu game syste
 
 ### Main Workflows
 
-5. **Prophet_Main.json** (TODO)
+5. **Prophet_Main.json**
    - Read-only AI assistant for answering player questions
    - Webhook: `/coc_prophet`
-   - Intent classification → route to sub-workflows → iterate → respond
+   - Input: `{ player_id, question, session_id?, campaign_id?, character_ids? }`
+   - Intent classification (6 types): RULES_LOOKUP, CHARACTER_INFO, GAME_HISTORY, DICE_CALCULATION, LORE_KNOWLEDGE, MULTI_STEP
+   - Routes to appropriate sub-workflows based on intent
+   - Supports iterative queries (max 5 cycles for complex questions)
+   - Merges data from multiple sources before LLM synthesis
    - Response format: `{ output, references }`
 
-6. **DungeonMaster_Main.json** (TODO)
-   - Story agent for processing player actions and generating scenes
+6. **DungeonMaster_Main.json**
+   - Story agent for processing player actions and generating narrative scenes
    - Webhook: `/coc_dungeonmaster`
-   - Parse actions → detect skill checks → roll → generate scene → write Turn reaction
-   - Response format: `{ output, rules_applied }`
+   - Input: `{ ActiveTurn: [...], scene_id, session_id, campaign_id, turn_id }`
+   - Workflow: Parse actions → Detect skill checks (Ollama) → Fetch characters → Roll dice → Fetch campaign/scene → Query lore → Generate narrative (LLM) → Detect interaction (Ollama) → Write Turn reaction (MongoDB) → Respond
+   - **CRITICAL**: Never takes actions on behalf of player characters, only resolves outcomes
+   - Inline components: Skill check detection, interaction detection, Turn writing
+   - Response format: `{ output, rules_applied[], requires_input, interaction_type }`
 
 ## Setup Instructions
 
@@ -222,40 +229,113 @@ Expected output: Natural language answer with references
 
 ## Data Flow Examples
 
-### Prophet Flow
+### Prophet Flow (Simple Query)
 ```
 User asks: "What is my Sanity?"
   ↓
-Prophet Main: Intent = CHARACTER_INFO
+Webhook - Prophet: Receive request
   ↓
-MongoDB Query SubWF: Fetch character
+Extract Context: Parse player_id, question, character_ids
   ↓
-LLM Synthesizer SubWF: Generate answer
+Intent Classifier: Ollama LLM → "CHARACTER_INFO"
   ↓
-Return: "Your Sanity is 65/80..."
+Intent Router: Route to character path
+  ↓
+Prepare Character Query: Build MongoDB query
+  ↓
+MongoDB Query SubWF: Fetch character data
+  ↓
+Merge Collected Data: Combine character data + references
+  ↓
+LLM Synthesizer SubWF: Generate answer with agent_type='prophet'
+  ↓
+Format Response: { output: "Your Sanity is 65/80...", references: [...] }
+  ↓
+Respond to Webhook: Return JSON to frontend
+```
+
+### Prophet Flow (Multi-Step Query)
+```
+User asks: "Can I make the Spot Hidden check to find the hidden door?"
+  ↓
+Webhook - Prophet: Receive request
+  ↓
+Extract Context: Parse question
+  ↓
+Intent Classifier: Ollama LLM → "MULTI_STEP"
+  ↓
+Multi-Step Orchestrator: Iteration 1
+  ↓
+Analyze Data Needs: LLM determines needs_characters=true, needs_rules=true
+  ↓
+[Loop back to fetch character data + Spot Hidden skill value]
+  ↓
+MongoDB Query SubWF: Fetch character with Spot Hidden skill
+  ↓
+Qdrant RAG SubWF: Fetch rules about skill checks
+  ↓
+Merge Collected Data: Combine all context
+  ↓
+LLM Synthesizer SubWF: Generate comprehensive answer
+  ↓
+Format Response: { output: "Your Spot Hidden is 45%...", references: [...] }
+  ↓
+Respond to Webhook: Return JSON
 ```
 
 ### DungeonMaster Flow
 ```
-Players submit actions
+Players submit actions: { ActiveTurn: [{ speak: "...", act: "I examine the door carefully", ... }] }
   ↓
-DungeonMaster Main: Parse actions
+Webhook - DungeonMaster: Receive request
   ↓
-Inline Skill Check Detector: "examine door" → Spot Hidden
+Parse Actions: Extract player actions, character IDs, scene/session/campaign IDs
   ↓
-MongoDB Query SubWF: Fetch character stats
+Detect Skill Checks (Ollama): Analyze actions → detects "Spot Hidden" needed
   ↓
-Dice Roller SubWF: Roll Spot Hidden (success!)
+Parse Detected Skills: Extract skill check requirements
   ↓
-Qdrant RAG SubWF: Fetch mythos about "hidden passages"
+Has Skill Checks? → TRUE path
   ↓
-LLM Synthesizer SubWF: Generate narrative scene
+Prepare Character Fetch: Build MongoDB query for character IDs
   ↓
-Inline Interaction Detector: Requires user input (hidden passage found)
+MongoDB Query SubWF: Fetch characters with skill values
   ↓
-Inline Turn Writer: Write Turn.reaction to MongoDB
+Match Skills to Characters: Find "Spot Hidden" value (45%) for player character
   ↓
-Return: Scene description + rules_applied
+Dice Roller SubWF: Roll skill check → "Success" (rolled 32 vs 45)
+  ↓
+[Parallel fetches]
+├─ Fetch Campaign (MongoDB): Get story arc, milestones, setting
+├─ Fetch Scene (MongoDB): Get current scene context, participants
+└─ Qdrant RAG SubWF: Query lore about "hidden passages" and "examination"
+  ↓
+Merge Collected Data: Combine all context (characters, campaign, scene, lore, skill results)
+  ↓
+Prepare LLM Input: Format collected data for dungeonmaster agent
+  ↓
+LLM Synthesizer SubWF: Generate narrative (agent_type='dungeonmaster')
+  → "You carefully examine the door. Your keen eye notices subtle scratches..."
+  ↓
+Detect Interaction Needed (Ollama): Analyze scene → requires_input=true (DISCOVERY)
+  ↓
+Parse Interaction: Extract interaction data
+  ↓
+Write Turn Reaction (MongoDB): Update Turn document with:
+  - reaction.description (narrative)
+  - reaction.skill_checks (Spot Hidden: Success)
+  - reaction.requires_input (true)
+  - status: "awaiting_player_input"
+  ↓
+Format Response: Build final output
+  ↓
+Respond to Webhook: Return JSON
+{
+  "output": "You carefully examine the door...",
+  "rules_applied": [{ "rule_type": "skill_check", "skill_name": "Spot Hidden", "result": "Success" }],
+  "requires_input": true,
+  "interaction_type": "DISCOVERY"
+}
 ```
 
 ## Maintenance
