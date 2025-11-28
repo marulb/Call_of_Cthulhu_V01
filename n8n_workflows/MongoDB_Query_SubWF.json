@@ -120,8 +120,6 @@
     },
     {
       "parameters": {
-        "operation": "find",
-        "database": "call_of_cthulhu_gamerecords",
         "collection": "entities",
         "options": {
           "queryParameters": "={{ JSON.stringify({ id: { $in: $json.entity_ids || [] }, kind: 'pc' }) }}"
@@ -129,8 +127,8 @@
       },
       "id": "mongodb-character",
       "name": "MongoDB - Character",
-      "type": "n8n-nodes-base.mongodb",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
       "position": [680, 140],
       "credentials": {
         "mongoDb": {
@@ -141,8 +139,6 @@
     },
     {
       "parameters": {
-        "operation": "find",
-        "database": "call_of_cthulhu_gamerecords",
         "collection": "turns",
         "options": {
           "queryParameters": "={{ JSON.stringify($json.filters || {}) }}",
@@ -152,8 +148,8 @@
       },
       "id": "mongodb-turn",
       "name": "MongoDB - Turn",
-      "type": "n8n-nodes-base.mongodb",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
       "position": [680, 260],
       "credentials": {
         "mongoDb": {
@@ -164,8 +160,6 @@
     },
     {
       "parameters": {
-        "operation": "find",
-        "database": "call_of_cthulhu_gamerecords",
         "collection": "sessions",
         "options": {
           "queryParameters": "={{ JSON.stringify($json.filters || {}) }}"
@@ -173,8 +167,8 @@
       },
       "id": "mongodb-session",
       "name": "MongoDB - Session",
-      "type": "n8n-nodes-base.mongodb",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
       "position": [680, 380],
       "credentials": {
         "mongoDb": {
@@ -185,8 +179,6 @@
     },
     {
       "parameters": {
-        "operation": "find",
-        "database": "call_of_cthulhu_gamerecords",
         "collection": "scenes",
         "options": {
           "queryParameters": "={{ JSON.stringify($json.filters || {}) }}"
@@ -194,8 +186,8 @@
       },
       "id": "mongodb-scene",
       "name": "MongoDB - Scene",
-      "type": "n8n-nodes-base.mongodb",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
       "position": [680, 500],
       "credentials": {
         "mongoDb": {
@@ -206,8 +198,6 @@
     },
     {
       "parameters": {
-        "operation": "find",
-        "database": "call_of_cthulhu_gamerecords",
         "collection": "campaigns",
         "options": {
           "queryParameters": "={{ JSON.stringify($json.filters || {}) }}"
@@ -215,8 +205,8 @@
       },
       "id": "mongodb-campaign",
       "name": "MongoDB - Campaign",
-      "type": "n8n-nodes-base.mongodb",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
       "position": [680, 620],
       "credentials": {
         "mongoDb": {

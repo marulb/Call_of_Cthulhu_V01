@@ -18,7 +18,7 @@
           "parameters": [
             {
               "name": "model",
-              "value": "nomic-embed-text"
+              "value": "jina/jina-embeddings-v2-base-de:latest"
             },
             {
               "name": "prompt",
