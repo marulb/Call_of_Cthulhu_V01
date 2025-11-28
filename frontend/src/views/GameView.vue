@@ -110,6 +110,7 @@ const characterReadyStates = ref<Map<string, boolean>>(new Map()) // character_i
 // Character Sheet Modal State
 const showCharacterSheet = ref(false)
 const editingCharacter = ref<Character | null>(null)
+const lastViewedCharacter = ref<Character | null>(null) // Track last viewed character (not persistent)
 let autosaveTimeout: ReturnType<typeof setTimeout> | null = null
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8093'
@@ -139,9 +140,97 @@ const visibilityContainers = computed<VisibilityContainer[]>(() => [
 
 function toggleContainerVisibility(containerId: string) {
   if (containerId === 'sheet') {
-    // For character sheet, also close it if it's being hidden
     if (containerVisibility.value.sheet) {
-      closeCharacterSheet()
+      // Hiding: save last viewed character and hide
+      lastViewedCharacter.value = editingCharacter.value
+      showCharacterSheet.value = false
+      containerVisibility.value.sheet = false
+    } else {
+      // Showing: restore last viewed character (or create empty one)
+      if (lastViewedCharacter.value) {
+        editingCharacter.value = lastViewedCharacter.value
+      } else {
+        // Create an empty character for display
+        editingCharacter.value = {
+          id: '',
+          kind: 'character',
+          name: '',
+          realm_id: sessionStore.currentSession?.realm_id || '',
+          controller: {
+            owner: sessionStore.playerName || '',
+            mode: 'player'
+          },
+          ooc_notes: '',
+          profile_completed: false,
+          meta: {
+            created_by: sessionStore.playerName || '',
+            created_at: new Date().toISOString()
+          },
+          changes: [],
+          data: {
+            investigator: {
+              name: '',
+              birthplace: '',
+              pronoun: '',
+              occupation: '',
+              residence: '',
+              age: ''
+            },
+            characteristics: {
+              STR: { reg: '' },
+              CON: { reg: '' },
+              DEX: { reg: '' },
+              APP: { reg: '' },
+              INT: { reg: '' },
+              POW: { reg: '' },
+              SIZ: { reg: '' },
+              EDU: { reg: '' }
+            },
+            skills: {},
+            combat: {
+              weapons: [],
+              move: 0,
+              build: '',
+              damage_bonus: ''
+            },
+            story: {
+              my_story: '',
+              backstory: {
+                personal_description: '',
+                ideology_beliefs: '',
+                significant_people: '',
+                meaningful_locations: '',
+                treasured_possessions: '',
+                traits: '',
+                injuries_scars: '',
+                phobias_manias: '',
+                arcane_tomes_spells: '',
+                encounters_strange_entities: ''
+              }
+            },
+            gear_possessions: '',
+            wealth: {
+              spending_level: '',
+              cash: '',
+              assets: ''
+            },
+            relationships: [],
+            hit_points: { current: '', max: '' },
+            magic_points: { current: '', max: '' },
+            luck: { starting: '', current: '' },
+            sanity: { insane: '', max: '', current: '' },
+            status: {
+              temporary_insanity: false,
+              indefinite_insanity: false,
+              major_wound: false,
+              unconscious: false,
+              dying: false
+            }
+          }
+        }
+      }
+      showCharacterSheet.value = true
+      containerVisibility.value.sheet = true
     }
   } else {
     containerVisibility.value[containerId] = !containerVisibility.value[containerId]
@@ -484,6 +573,7 @@ async function handleCharacterDoubleClick(characterId: string) {
     // Load full character data from API
     const character = await charactersAPI.get(characterId)
     editingCharacter.value = character
+    lastViewedCharacter.value = character // Update last viewed character
     showCharacterSheet.value = true
     containerVisibility.value.sheet = true
   } catch (error) {
@@ -493,6 +583,8 @@ async function handleCharacterDoubleClick(characterId: string) {
 }
 
 function closeCharacterSheet() {
+  // Save last viewed character before clearing
+  lastViewedCharacter.value = editingCharacter.value
   showCharacterSheet.value = false
   containerVisibility.value.sheet = false
   editingCharacter.value = null

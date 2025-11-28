@@ -24,9 +24,10 @@
     </div>
 
     <div class="chat-input">
-      <input v-model="newMessage" type="text" placeholder="Type a message..." @keyup.enter="sendMessage"
-        :disabled="!connected" />
-      <button @click="sendMessage" :disabled="!newMessage.trim() || !connected" class="btn-send">
+      <textarea v-model="newMessage" placeholder="Press Ctrl+Enter to send" rows="2" @keyup.ctrl.enter="sendMessage"
+        :disabled="!connected"></textarea>
+      <button @click="sendMessage" :disabled="!newMessage.trim() || !connected" class="btn-send"
+        title="Press Ctrl+Enter to send">
         Send
       </button>
     </div>
@@ -233,23 +234,25 @@ watch(
   border-top: 1px solid var(--color-border);
 }
 
-.chat-input input {
+.chat-input textarea {
   flex: 1;
   padding: 10px 12px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 13px;
   font-family: inherit;
+  resize: vertical;
+  min-height: 42px;
   background: var(--color-background);
   color: var(--color-text);
 }
 
-.chat-input input:focus {
+.chat-input textarea:focus {
   outline: none;
   border-color: var(--vt-c-ink-green-light);
 }
 
-.chat-input input:disabled {
+.chat-input textarea:disabled {
   background: var(--color-background-mute);
   cursor: not-allowed;
   opacity: 0.6;
@@ -265,6 +268,7 @@ watch(
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
+  align-self: flex-end;
 }
 
 .btn-send:hover:not(:disabled) {

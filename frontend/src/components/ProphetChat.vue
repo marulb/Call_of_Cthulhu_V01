@@ -54,16 +54,12 @@
     </div>
 
     <div class="chat-input">
-      <textarea v-model="newMessage" placeholder="Ask the Prophet..." rows="2" @keyup.ctrl.enter="sendMessage"
+      <textarea v-model="newMessage" placeholder="Press Ctrl+Enter to send" rows="2" @keyup.ctrl.enter="sendMessage"
         :disabled="!connected || isWaitingForResponse"></textarea>
       <button @click="sendMessage" :disabled="!newMessage.trim() || !connected || isWaitingForResponse"
-        class="btn-send">
+        class="btn-send" title="Press Ctrl+Enter to send">
         Ask
       </button>
-    </div>
-
-    <div class="chat-footer">
-      <span class="help-text">Press Ctrl+Enter to send</span>
     </div>
   </div>
 </template>
@@ -419,17 +415,5 @@ watch(
 .btn-send:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.chat-footer {
-  padding: 8px 12px;
-  background: var(--color-background-soft);
-  border-top: 1px solid var(--color-border);
-  text-align: center;
-}
-
-.help-text {
-  font-size: 11px;
-  color: var(--vt-c-fog);
 }
 </style>

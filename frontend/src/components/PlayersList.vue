@@ -12,22 +12,23 @@
         class="player-section"
       >
         <!-- Player Header -->
-        <div class="player-item" :class="getPlayerClass(player)">
+        <div class="player-item" :class="getPlayerClass(player)" @click="togglePlayerCollapse(player.player_id)">
           <button
             v-if="isLocalPlayer(player)"
             class="ready-led"
             :class="{ ready: isPlayerReady(player) }"
-            @click="togglePlayerReady(player)"
+            @click.stop="togglePlayerReady(player)"
             :title="isPlayerReady(player) ? 'Mark all as not ready' : 'Mark all as ready'"
           >
             <span class="led"></span>
           </button>
+          <span class="toggle-arrow" :class="{ collapsed: isPlayerCollapsed(player.player_id) }">▼</span>
           <span class="player-name">{{ player.player_name }}</span>
           <span v-if="player.player_id === masterPlayerId" class="master-star">★</span>
         </div>
 
         <!-- Characters List -->
-        <div class="characters-list">
+        <div v-show="!isPlayerCollapsed(player.player_id)" class="characters-list">
           <div
             v-for="char in player.characters"
             :key="char.id"
@@ -61,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 interface Character {
   id: string
@@ -86,6 +87,25 @@ const emit = defineEmits<{
   toggleReady: [playerId: string, characterId: string]
   characterDoubleClick: [characterId: string]
 }>()
+
+// Track which players are collapsed
+const collapsedPlayers = ref<Set<string>>(new Set())
+
+// Check if player is collapsed
+const isPlayerCollapsed = (playerId: string) => {
+  return collapsedPlayers.value.has(playerId)
+}
+
+// Toggle player collapse state
+const togglePlayerCollapse = (playerId: string) => {
+  if (collapsedPlayers.value.has(playerId)) {
+    collapsedPlayers.value.delete(playerId)
+  } else {
+    collapsedPlayers.value.add(playerId)
+  }
+  // Trigger reactivity
+  collapsedPlayers.value = new Set(collapsedPlayers.value)
+}
 
 // Check if player is local (current user)
 const isLocalPlayer = (player: Player) => player.player_id === props.currentPlayerId
@@ -204,6 +224,12 @@ const readyCount = computed(() => {
   border: 1px solid;
   margin-bottom: 2px;
   transition: all 0.2s;
+  cursor: pointer;
+  user-select: none;
+}
+
+.player-item:hover {
+  opacity: 0.85;
 }
 
 /* Local player/character states */
@@ -226,6 +252,19 @@ const readyCount = computed(() => {
 .player-item.is-remote.is-ready {
   background-color: var(--color-background-mute);
   border-color: var(--vt-c-ink-green);
+}
+
+.toggle-arrow {
+  font-size: 10px;
+  color: var(--color-text);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  width: 12px;
+  text-align: center;
+}
+
+.toggle-arrow.collapsed {
+  transform: rotate(-90deg);
 }
 
 .player-name {

@@ -157,7 +157,7 @@ function formatStatus(status: string) {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: var(--color-background-soft);
+  background: var(--vt-c-deep-sea);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -165,7 +165,7 @@ function formatStatus(status: string) {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-heading);
+  color: var(--vt-c-white);
 }
 
 .header-actions {
@@ -187,7 +187,7 @@ function formatStatus(status: string) {
   background: none;
   border: none;
   font-size: 20px;
-  color: var(--color-text);
+  color: var(--vt-c-white);
   cursor: pointer;
   padding: 0;
   width: 24px;
@@ -201,7 +201,7 @@ function formatStatus(status: string) {
 }
 
 .btn-close:hover {
-  background: var(--color-background-mute);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .turns-container {

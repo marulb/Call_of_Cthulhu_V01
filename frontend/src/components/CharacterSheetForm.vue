@@ -508,7 +508,7 @@ function saveToJSON() {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: var(--color-background-soft);
+  background: var(--vt-c-ink-green);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -516,7 +516,7 @@ function saveToJSON() {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-heading);
+  color: var(--vt-c-white);
 }
 
 .header-actions {
@@ -529,7 +529,7 @@ function saveToJSON() {
   background: none;
   border: none;
   font-size: 20px;
-  color: var(--color-text);
+  color: var(--vt-c-white);
   cursor: pointer;
   padding: 0;
   width: 24px;
@@ -543,7 +543,7 @@ function saveToJSON() {
 }
 
 .btn-close:hover {
-  background: var(--color-background-mute);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .form-sections {
@@ -695,12 +695,12 @@ function saveToJSON() {
 }
 
 .btn-primary {
-  background: var(--vt-c-ink-green);
-  color: var(--vt-c-white);
+  background: var(--vt-c-white);
+  color: var(--vt-c-deep-sea);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--vt-c-ink-green-light);
+  background: var(--vt-c-white-soft);
 }
 
 .btn-primary:disabled {
@@ -710,13 +710,13 @@ function saveToJSON() {
 }
 
 .btn-secondary {
-  background: var(--color-background-soft);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--vt-c-white);
+  border: 1px solid var(--vt-c-white);
 }
 
 .btn-secondary:hover {
-  background: var(--color-background-mute);
-  border-color: var(--color-border-hover);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--vt-c-white);
 }
 </style>
