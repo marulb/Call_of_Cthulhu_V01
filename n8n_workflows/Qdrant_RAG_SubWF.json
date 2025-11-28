@@ -3,11 +3,14 @@
   "nodes": [
     {
       "parameters": {},
-      "id": "workflow-trigger",
+      "id": "1c0d25d4-f5e0-44a8-8438-00d4b97c3bdf",
       "name": "Execute Workflow Trigger",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        -608,
+        80
+      ]
     },
     {
       "parameters": {
@@ -30,21 +33,27 @@
           "timeout": 30000
         }
       },
-      "id": "generate-embedding",
+      "id": "a2f00435-61ae-4816-9040-e603590fa17a",
       "name": "Generate Embedding (Ollama)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [440, 300]
+      "position": [
+        -416,
+        80
+      ]
     },
     {
       "parameters": {
         "jsCode": "// Extract embedding vector from Ollama response\nconst embedding = $json.embedding;\nconst query = $input.first().json.query;\nconst collection = $input.first().json.collection || 'Cthulhu_Wiki';\nconst limit = $input.first().json.limit || 5;\n\nreturn [\n  {\n    json: {\n      embedding,\n      query,\n      collection,\n      limit\n    }\n  }\n];"
       },
-      "id": "prepare-qdrant-query",
+      "id": "1b3af9ec-459c-468b-9aa7-16648a60a457",
       "name": "Prepare Qdrant Query",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [640, 300]
+      "position": [
+        -208,
+        80
+      ]
     },
     {
       "parameters": {
@@ -57,32 +66,27 @@
           "timeout": 30000
         }
       },
-      "id": "query-qdrant",
+      "id": "6c2d3e8e-b56c-4156-b1f7-0e9f7ed4764a",
       "name": "Query Qdrant",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [840, 300]
+      "position": [
+        -16,
+        80
+      ]
     },
     {
       "parameters": {
         "jsCode": "// Extract chunks from Qdrant response\nconst qdrantResults = $json.result || [];\nconst chunks = [];\nconst references = [];\nconst seenSources = new Set();\n\nfor (const hit of qdrantResults) {\n  const payload = hit.payload || {};\n  const text = payload.text || payload.content || '';\n  const source = payload.source || payload.metadata?.source || 'Unknown';\n  const score = hit.score || 0;\n\n  if (text) {\n    chunks.push({\n      text,\n      source,\n      score\n    });\n\n    // Deduplicate references\n    if (!seenSources.has(source)) {\n      references.push(source);\n      seenSources.add(source);\n    }\n  }\n}\n\nreturn [\n  {\n    json: {\n      chunks,\n      references,\n      total_chunks: chunks.length\n    }\n  }\n];"
       },
-      "id": "extract-chunks",
+      "id": "282e2ed5-57f2-4d13-9654-f7dfb90fb741",
       "name": "Extract Chunks",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1040, 300]
-    },
-    {
-      "parameters": {
-        "respondWith": "allIncomingItems",
-        "options": {}
-      },
-      "id": "respond-to-workflow",
-      "name": "Respond to Workflow",
-      "type": "n8n-nodes-base.respondToWorkflow",
-      "typeVersion": 1,
-      "position": [1240, 300]
+      "position": [
+        192,
+        80
+      ]
     }
   ],
   "pinData": {},
@@ -130,27 +134,16 @@
           }
         ]
       ]
-    },
-    "Extract Chunks": {
-      "main": [
-        [
-          {
-            "node": "Respond to Workflow",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "1",
-  "id": "qdrant-rag-subwf",
+  "versionId": "1de79de4-2422-4b11-a802-f8c12d00d7f8",
   "meta": {
-    "instanceId": "call-of-cthulhu-n8n"
+    "instanceId": "00a8bc7dcc0678a45156c17552244c5fb9e78ff325baae937e09d98a3453ca71"
   },
+  "id": "RujcKBHIYtoxE5H4",
   "tags": []
 }

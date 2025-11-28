@@ -3,11 +3,14 @@
   "nodes": [
     {
       "parameters": {},
-      "id": "workflow-trigger",
+      "id": "5667ef87-2008-4df8-82c2-ec00bc31d77c",
       "name": "Execute Workflow Trigger",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        -304,
+        368
+      ]
     },
     {
       "parameters": {
@@ -112,28 +115,32 @@
         },
         "options": {}
       },
-      "id": "query-router",
+      "id": "29edc667-a1b1-40aa-b1bd-1a651cc059cf",
       "name": "Query Type Router",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
-      "position": [440, 300]
+      "position": [
+        -80,
+        320
+      ]
     },
     {
       "parameters": {
         "collection": "entities",
-        "options": {
-          "queryParameters": "={{ JSON.stringify({ id: { $in: $json.entity_ids || [] }, kind: 'pc' }) }}"
-        }
+        "options": {}
       },
-      "id": "mongodb-character",
+      "id": "e0388ce0-0e0d-43ac-b4c7-5a6c06f2b61f",
       "name": "MongoDB - Character",
       "type": "n8n-nodes-base.mongoDb",
       "typeVersion": 1.2,
-      "position": [680, 140],
+      "position": [
+        144,
+        -16
+      ],
       "credentials": {
         "mongoDb": {
-          "id": "call_of_cthulhu_mongodb",
-          "name": "CoC MongoDB"
+          "id": "KatUu4hcJi0VoYNT",
+          "name": "MongoDB account"
         }
       }
     },
@@ -141,77 +148,82 @@
       "parameters": {
         "collection": "turns",
         "options": {
-          "queryParameters": "={{ JSON.stringify($json.filters || {}) }}",
-          "sort": "={{ JSON.stringify({ turn_number: -1 }) }}",
-          "limit": 50
+          "limit": 50,
+          "sort": "={{ JSON.stringify({ turn_number: -1 }) }}"
         }
       },
-      "id": "mongodb-turn",
+      "id": "3a750752-a086-4fcd-bbb1-608b216a7d3f",
       "name": "MongoDB - Turn",
       "type": "n8n-nodes-base.mongoDb",
       "typeVersion": 1.2,
-      "position": [680, 260],
+      "position": [
+        144,
+        176
+      ],
       "credentials": {
         "mongoDb": {
-          "id": "call_of_cthulhu_mongodb",
-          "name": "CoC MongoDB"
+          "id": "KatUu4hcJi0VoYNT",
+          "name": "MongoDB account"
         }
       }
     },
     {
       "parameters": {
         "collection": "sessions",
-        "options": {
-          "queryParameters": "={{ JSON.stringify($json.filters || {}) }}"
-        }
+        "options": {}
       },
-      "id": "mongodb-session",
+      "id": "3a7438c9-8624-4bd5-b2c3-d277bb2d0410",
       "name": "MongoDB - Session",
       "type": "n8n-nodes-base.mongoDb",
       "typeVersion": 1.2,
-      "position": [680, 380],
+      "position": [
+        144,
+        368
+      ],
       "credentials": {
         "mongoDb": {
-          "id": "call_of_cthulhu_mongodb",
-          "name": "CoC MongoDB"
+          "id": "KatUu4hcJi0VoYNT",
+          "name": "MongoDB account"
         }
       }
     },
     {
       "parameters": {
         "collection": "scenes",
-        "options": {
-          "queryParameters": "={{ JSON.stringify($json.filters || {}) }}"
-        }
+        "options": {}
       },
-      "id": "mongodb-scene",
+      "id": "e2a27b33-f71a-42f2-aa3c-d58d28109f74",
       "name": "MongoDB - Scene",
       "type": "n8n-nodes-base.mongoDb",
       "typeVersion": 1.2,
-      "position": [680, 500],
+      "position": [
+        144,
+        560
+      ],
       "credentials": {
         "mongoDb": {
-          "id": "call_of_cthulhu_mongodb",
-          "name": "CoC MongoDB"
+          "id": "KatUu4hcJi0VoYNT",
+          "name": "MongoDB account"
         }
       }
     },
     {
       "parameters": {
         "collection": "campaigns",
-        "options": {
-          "queryParameters": "={{ JSON.stringify($json.filters || {}) }}"
-        }
+        "options": {}
       },
-      "id": "mongodb-campaign",
+      "id": "acc2edcc-a801-41aa-9443-45cea9d2fba8",
       "name": "MongoDB - Campaign",
       "type": "n8n-nodes-base.mongoDb",
       "typeVersion": 1.2,
-      "position": [680, 620],
+      "position": [
+        144,
+        752
+      ],
       "credentials": {
         "mongoDb": {
-          "id": "call_of_cthulhu_mongodb",
-          "name": "CoC MongoDB"
+          "id": "KatUu4hcJi0VoYNT",
+          "name": "MongoDB account"
         }
       }
     },
@@ -219,22 +231,14 @@
       "parameters": {
         "jsCode": "// Extract relevant fields to minimize context\nconst queryType = $input.first().json.query_type;\nconst results = $input.all().map(item => item.json);\n\nlet extractedData = [];\nlet references = [];\n\nif (queryType === 'character') {\n  extractedData = results.map(char => {\n    const data = char.data?.character_sheet || {};\n    references.push(`Character: ${char.name || 'Unknown'} (${char.id})`);\n    return {\n      id: char.id,\n      name: char.name,\n      occupation: data.investigator?.occupation,\n      age: data.investigator?.age,\n      characteristics: data.characteristics || {},\n      sanity: data.sanity || {},\n      hit_points: data.hit_points || {},\n      magic_points: data.magic_points || {},\n      luck: data.luck || {},\n      skills: data.skills ? Object.entries(data.skills).map(([name, skill]) => ({\n        name,\n        base: skill.base,\n        value: skill.reg || skill.base,\n        used: skill.used || false\n      })) : [],\n      weapons: data.combat?.weapons || [],\n      status: data.status || {}\n    };\n  });\n} else if (queryType === 'turn') {\n  extractedData = results.map(turn => {\n    references.push(`Turn #${turn.turn_number || turn.order} (${turn.scene_id})`);\n    return {\n      id: turn.id,\n      turn_number: turn.turn_number || turn.order,\n      scene_id: turn.scene_id,\n      session_id: turn.session_id,\n      timestamp: turn.timestamp,\n      status: turn.status,\n      actions: turn.actions || [],\n      reaction: turn.reaction || null\n    };\n  });\n} else if (queryType === 'session') {\n  extractedData = results.map(session => {\n    references.push(`Session: ${session.session_name || session.id}`);\n    return {\n      id: session.id,\n      session_name: session.session_name,\n      session_number: session.session_number,\n      session_date: session.session_date,\n      campaign_id: session.campaign_id,\n      realm_id: session.realm_id,\n      attendance: session.attendance,\n      story_links: session.story_links\n    };\n  });\n} else if (queryType === 'scene') {\n  extractedData = results.map(scene => {\n    references.push(`Scene: ${scene.scene_name || scene.name} (${scene.id})`);\n    return {\n      id: scene.id,\n      scene_name: scene.scene_name || scene.name,\n      chapter_id: scene.chapter_id,\n      location_id: scene.location_id,\n      status: scene.status,\n      participants: scene.participants || [],\n      turns: scene.turns || [],\n      summary: scene.summary,\n      description: scene.description\n    };\n  });\n} else if (queryType === 'campaign') {\n  extractedData = results.map(campaign => {\n    references.push(`Campaign: ${campaign.name} (${campaign.id})`);\n    return {\n      id: campaign.id,\n      name: campaign.name,\n      realm_id: campaign.realm_id,\n      status: campaign.status,\n      story_arc: campaign.story_arc || {},\n      setting: campaign.setting || {}\n    };\n  });\n}\n\nreturn [\n  {\n    json: {\n      data: extractedData,\n      references: references,\n      query_type: queryType\n    }\n  }\n];"
       },
-      "id": "extract-fields",
+      "id": "6644ff36-f451-4b23-987e-aa4ac9e47227",
       "name": "Extract Relevant Fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [920, 300]
-    },
-    {
-      "parameters": {
-        "respondWith": "allIncomingItems",
-        "options": {}
-      },
-      "id": "respond-to-workflow",
-      "name": "Respond to Workflow",
-      "type": "n8n-nodes-base.respondToWorkflow",
-      "typeVersion": 1,
-      "position": [1140, 300]
+      "position": [
+        368,
+        368
+      ]
     }
   ],
   "pinData": {},
@@ -343,27 +347,17 @@
           }
         ]
       ]
-    },
-    "Extract Relevant Fields": {
-      "main": [
-        [
-          {
-            "node": "Respond to Workflow",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "1",
-  "id": "mongodb-query-subwf",
+  "versionId": "614b157f-eaec-4336-ab9a-33c290a7853e",
   "meta": {
-    "instanceId": "call-of-cthulhu-n8n"
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00a8bc7dcc0678a45156c17552244c5fb9e78ff325baae937e09d98a3453ca71"
   },
+  "id": "y55TmujQLP0CCW1G",
   "tags": []
 }
