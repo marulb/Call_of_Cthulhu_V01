@@ -179,9 +179,72 @@ What could break? How to mitigate?
 
 ---
 
+## Phase 2C: Documentation & Handoff
+
+After completing the design, finalize documentation:
+
+### 1. Create ADR (Architecture Decision Record)
+
+Create `docs/decisions/ADR-001-hybrid-architecture.md`:
+
+```markdown
+# ADR-001: Hybrid Architecture - Backend Owns State, n8n Owns LLM
+
+## Status
+Accepted
+
+## Context
+- n8n workflows became too complex (context assembly, MongoDB writes, business logic)
+- Dual write paths caused state sync issues
+- No failure recovery when n8n failed mid-workflow
+
+## Decision
+- Backend owns ALL MongoDB writes
+- Backend assembles complete context bundle before calling n8n
+- n8n focuses ONLY on LLM orchestration
+- Async processing with callback pattern
+- Scene/chapter transitions are fully automated
+
+## Consequences
+### Positive
+- Single source of truth for state
+- Failure recovery possible (backend controls retries)
+- Simpler n8n workflows (~5-8 nodes vs 35+)
+- Better testability (backend logic is unit-testable)
+
+### Negative
+- More backend code to maintain
+- Additional latency from callback round-trip
+- Need to refactor existing n8n workflows
+
+### Assumptions Made
+(List any assumptions made during design)
+```
+
+### 2. Update HANDOFF_CONTEXT.md
+
+Update `docs/agents/HANDOFF_CONTEXT.md` with:
+- **Last Updated:** Current date
+- **Last Agent:** Your agent name
+- **Session:** Phase 2 Design Complete
+- **Active Task:** Point to Phase 3 (implementation) or mark as "Ready for Phase 3"
+- **What was completed:** Summary of design decisions
+- **Key files created/modified:** List the deliverables
+- **Next steps:** What Phase 3 should implement first
+
+### 3. Verify Deliverables Checklist
+
+Before ending, confirm these files exist and are complete:
+- [ ] `docs/architecture/REFACTORING_PLAN.md` — All 8 sections filled
+- [ ] `docs/decisions/ADR-001-hybrid-architecture.md` — Decision documented
+- [ ] `docs/agents/HANDOFF_CONTEXT.md` — Updated with session summary
+
+---
+
 ## Begin
 
 1. Read the files listed above
 2. Analyze DungeonMaster_Main.json
 3. Ask any clarifying questions
-4. Then write the design documents
+4. Then write the design documents (Phase 2A + 2B)
+5. Complete documentation handoff (Phase 2C)

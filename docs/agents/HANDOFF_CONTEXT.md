@@ -1,18 +1,18 @@
 # Agent Handoff Context
 
-> **Purpose:** Quick briefing for AI agents to continue work  
-> **Last Updated:** 2024-11-29  
-> **Last Agent:** GitHub Copilot  
-> **Session:** Documentation setup + Phase 2 task definition  
+> **Purpose:** Quick briefing for AI agents to continue work
+> **Last Updated:** 2025-11-29
+> **Last Agent:** Claude Code
+> **Session:** Phase 2 Design Complete - Hybrid Architecture
 > **Word Limit:** ~500 words
 
 ---
 
 ## Active Task
 
-**📋 Current Task:** `docs/agents/TASK_PHASE2_DESIGN.md`  
-**Status:** Ready for Claude Code  
-**Goal:** Design hybrid architecture to simplify DungeonMaster workflow
+**📋 Current Task:** Phase 3 - Implementation (Ready to Start)
+**Status:** Design complete, ready for implementation
+**Goal:** Implement hybrid architecture as designed in Phase 2
 
 ---
 
@@ -98,9 +98,91 @@ uvicorn main:app --reload --port 8000
 docker-compose up
 ```
 
-## Clarifying Questions Needed
+## What Was Completed (Phase 2)
 
-Before Phase 2, ask the user:
-1. Is 60-second webhook timeout acceptable?
-2. Should scene creation remain AI-driven?
-3. Where should skill check logic live?
+### Phase 2A: Analysis ✅
+- Analyzed all 34 nodes in `DungeonMaster_Main.json`
+- Categorized nodes: 22 MOVE, 7 KEEP, 9 REMOVE
+- Identified 6 critical architectural issues
+- Documented in `REFACTORING_PLAN.md` (Current State section)
+
+### Phase 2B: Design ✅
+- Designed async callback architecture (backend → n8n → backend callback)
+- Defined 3 new backend endpoints (submit, callback, status)
+- Simplified n8n workflow to 5-6 nodes (down from 34)
+- Created context bundle schema (15-30 KB payload)
+- Chose LLM-driven scene/chapter transitions
+- Wrote 8-step migration plan (10-15 dev days)
+- Risk assessment: 8 risks identified, all mitigated
+
+### Phase 2C: Documentation ✅
+- Created `ADR-001-hybrid-architecture.md` with decision rationale
+- Updated `HANDOFF_CONTEXT.md` (this file)
+
+## Key Files Created/Modified
+
+| File | Type | Content |
+|------|------|---------|
+| `docs/architecture/REFACTORING_PLAN.md` | Design | Complete architecture design (Sections 1-8) |
+| `docs/decisions/ADR-001-hybrid-architecture.md` | ADR | Decision record for hybrid architecture |
+| `docs/agents/HANDOFF_CONTEXT.md` | Handoff | Updated with Phase 2 summary |
+
+## Key Design Decisions
+
+1. **Async Callback Pattern:** Backend returns immediately, n8n calls back when done
+2. **Backend Owns ALL Writes:** MongoDB writes ONLY happen in backend
+3. **Backend Assembles Context:** n8n receives pre-assembled context bundle
+4. **LLM-Driven Transitions:** Scene/chapter detection in narrative generation (Option A)
+5. **5-6 Node Workflow:** Simplified n8n to just LLM orchestration
+
+## Architecture Summary
+
+**Before (Current):**
+```
+Frontend → Backend (blocks 60s) → n8n (34 nodes: data fetch, logic, writes, LLM) → Backend → Frontend
+```
+
+**After (Target):**
+```
+Frontend → Backend (returns in 100ms) → n8n (6 nodes: LLM only) → Backend callback → Socket.IO → Frontend
+```
+
+**What Moves to Backend:**
+- Context assembly (campaign, scene, characters, lore)
+- Skill check detection and rolling
+- Scene/chapter creation
+- ALL MongoDB writes
+
+**What Stays in n8n:**
+- LLM narrative generation
+- Transition detection (enhanced prompt)
+- Callback to backend
+
+## Next Steps (Phase 3 - Implementation)
+
+Follow the migration plan in `REFACTORING_PLAN.md` Section 7:
+
+1. **Start Here:** Step 1 - Create backend services
+   - `backend/app/services/context_assembly.py`
+   - `backend/app/services/skill_check.py`
+   - `backend/app/services/transition.py`
+
+2. **Then:** Step 2 - Create new backend endpoints
+   - `POST /api/v1/turns/{turn_id}/submit`
+   - `POST /api/v1/internal/turns/{turn_id}/complete`
+   - Add Socket.IO events
+
+3. **Important:** Use feature flag `USE_ASYNC_TURN_PROCESSING` for gradual rollout
+
+4. **Testing Strategy:** Build new system alongside old, validate with 10% traffic
+
+## Questions Answered
+
+✅ **Is 60-second webhook timeout acceptable?**
+→ No. Moving to async callback pattern (no timeout)
+
+✅ **Should scene creation remain AI-driven?**
+→ Yes. LLM detects transitions during narrative generation
+
+✅ **Where should skill check logic live?**
+→ Backend service (SkillCheckService), with regex/keyword matching initially
