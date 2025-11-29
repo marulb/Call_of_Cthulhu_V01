@@ -64,9 +64,11 @@ async def get_player(player_id: str):
 
 @router.get("/by-name/{player_name}", response_model=PlayerResponse)
 async def get_player_by_name(player_name: str):
-    """Get a player by exact name match."""
+    """Get a player by name (case-insensitive)."""
     db = get_gamerecords_db()
-    player = await db.players.find_one({"name": player_name})
+    player = await db.players.find_one({
+        "name": {"$regex": f"^{player_name}$", "$options": "i"}
+    })
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
     return player
@@ -74,11 +76,13 @@ async def get_player_by_name(player_name: str):
 
 @router.post("", response_model=PlayerResponse)
 async def create_or_get_player(player_data: PlayerCreate):
-    """Create a new player or return existing one if name already exists."""
+    """Create a new player or return existing one if name already exists (case-insensitive)."""
     db = get_gamerecords_db()
 
-    # Check if player already exists
-    existing = await db.players.find_one({"name": player_data.name})
+    # Check if player already exists (case-insensitive)
+    existing = await db.players.find_one({
+        "name": {"$regex": f"^{player_data.name}$", "$options": "i"}
+    })
     if existing:
         # Update last login
         existing["last_login"] = datetime.utcnow()
