@@ -1,62 +1,61 @@
 # Agent Handoff Context
 
 > **Purpose:** Quick briefing for AI agents to continue work
-> **Last Updated:** 2025-11-29 (M6 + M7 complete)
-> **Last Agent:** Claude Code
-> **Session:** Phase 4 Milestones M1-M7+M8 COMPLETE
+> **Last Updated:** 2025-11-29 19:45 UTC
+> **Last Agent:** GitHub Copilot
+> **Session:** Phase 5 - UI/UX Improvements & AI Character Integration
 > **Word Limit:** ~500 words
 
 ---
 
 ## Active Task
 
-**📋 Current Task:** Phase 4 - Remaining: M2-UI (optional)
-**Status:** ✅ M1, M2, M3, M4, M5, M6, M7, M8, M8b COMPLETE | 🟡 M2-UI NOT STARTED
-**Document:** `docs/agents/TASK_PHASE4_COMPLETE.md`
-**Commits:**
-- `5476c01` - M1+M3+M8 implementation
-- `16481fa` - M4+M5+M8b (LLM summarization + markdown)
-- `396854c` - M2 (Campaign milestones)
+**📋 Current Task:** Phase 5 - UX Improvements & AI Integration
+**Status:** 🟡 P5-1 to P5-4 TODO | ⏸️ P5-5 DEFERRED
+**Document:** `docs/agents/TASK_PHASE5_UX.md`
 
 ---
 
-## Completed This Session
+## Phase 4 Complete ✅
 
-### M1: Realm/Campaign Settings ✅
-- Added `RealmContext` to `context_assembly.py` with `setting.tone`, `setting.notes`
-- `CampaignContext` now passes full `setting` dict (tone, goal, key_elements, story_elements)
-- `DungeonMaster_Main.json` updated to include realm in `collected_data`
-- `LLM_Synthesizer_SubWF.json` prompt now has REALM CONTEXT, CHAPTER CONTEXT, CURRENT SCENE sections
+All Phase 4 milestones completed:
+- M1: Realm/Campaign Settings
+- M2: Campaign Milestones (backend + UI)  
+- M3: Keeper Context Window
+- M4: Scene Summarization
+- M5: Chapter Summarization
+- M6: AI-Controlled Characters
+- M7: NPC Agent System
+- M8/M8b: Frontend Bugs + Markdown
 
-### M2: Campaign Milestones ✅
-- Extended `CampaignCreate` model with `setting` dict and `generate_milestones` flag
-- Added `milestones: List[str]` to `StoryArc` model
-- Campaign creation route generates milestones via `LLMService` when requested
-- Uses campaign tone, goal, story_elements for contextual milestone generation
+Reports: `docs/agents/reports/REPORT_PHASE4_M6.md`, `REPORT_PHASE4_M7.md`
 
-### M3: Keeper Context Window ✅
-- Previous turns already included in context (was done in Phase 3)
-- Scene summary, chapter summary passed to LLM prompt
-- Enhanced prompt building with full narrative hierarchy
+---
 
-### M4: Scene Summarization ✅
-- Created `backend/app/services/llm.py` - Direct Ollama LLM service
-- `summarize_scene()` generates markdown summary from turn history
-- Called by transition service when scene closes
+## Phase 5 Tasks
 
-### M5: Chapter Summarization ✅
-- `summarize_chapter()` generates markdown summary from scene summaries
-- Called by transition service when chapter closes
+| ID | Task | Priority | Status |
+|----|------|----------|--------|
+| P5-1 | Player name case sensitivity | Medium | 🟡 TODO |
+| P5-2 | AI checkbox styling in CharacterSheet | Low | 🟡 TODO |
+| P5-3 | Action ✓/✗ toggle (ready/edit mode) | High | 🟡 TODO |
+| P5-4 | AI Character action generation | High | 🟡 TODO |
+| P5-5 | Automatic character creation | - | ⏸️ DEFERRED |
 
-### M8: Frontend Bug Fixes ✅
-- **CharacterSheet close bug:** Autosave no longer triggers close (added `isAutosave` param)
-- **CombatSection collapse:** Fixed v-for key that included `weapon.name` (caused re-render on type)
-- **RelationshipsSection collapse:** Fixed v-for key that included `rel.object`
+### P5-3 Details (Action Toggle)
+- Remove "Create Action" / "Cancel" buttons
+- Add ✓ (toggle ready/edit) and ✗ (remove) per action
+- Ready = darker green, non-editable
+- Edit = lighter green, editable
 
-### M8b: Markdown Rendering ✅
-- Installed `marked` package in frontend
-- Created `frontend/src/composables/useMarkdown.ts` with XSS sanitization
-- `SceneProgress.vue` renders narrative with v-html
+### P5-4 Details (AI Actions)
+- Fix: `ai_controlled` not being stored properly
+- Add ⋆˙⟡ button to trigger AI action generation
+- Warn if AI characters have no actions on submit
+
+---
+
+## Known Issues
 
 ### M6: AI-Controlled Characters ✅
 - Added `ai_controlled: bool` and `ai_personality: Optional[str]` to Character model
