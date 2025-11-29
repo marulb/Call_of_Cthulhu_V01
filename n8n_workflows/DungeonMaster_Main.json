@@ -12,7 +12,10 @@
       "name": "Webhook - Receive Context Bundle",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 0],
+      "position": [
+        0,
+        0
+      ],
       "webhookId": "coc-dungeonmaster-v2-webhook"
     },
     {
@@ -23,7 +26,10 @@
       "name": "Validate Context",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [200, 0]
+      "position": [
+        200,
+        0
+      ]
     },
     {
       "parameters": {
@@ -33,7 +39,10 @@
       "name": "Prepare LLM Input",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [400, 0]
+      "position": [
+        400,
+        0
+      ]
     },
     {
       "parameters": {
@@ -44,7 +53,10 @@
       "name": "Call LLM Synthesizer SubWF",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.1,
-      "position": [600, 0]
+      "position": [
+        600,
+        0
+      ]
     },
     {
       "parameters": {
@@ -54,7 +66,10 @@
       "name": "Format Callback Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [800, 0]
+      "position": [
+        800,
+        0
+      ]
     },
     {
       "parameters": {
@@ -71,7 +86,10 @@
       "name": "POST to Backend Callback",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1000, 0]
+      "position": [
+        1000,
+        0
+      ]
     }
   ],
   "pinData": {},
