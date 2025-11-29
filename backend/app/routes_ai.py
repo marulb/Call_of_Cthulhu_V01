@@ -412,14 +412,12 @@ async def generate_ai_character_action(request: GenerateActionRequest):
     db = get_gamerecords_db()
 
     # Fetch character
-    character = await db.characters.find_one({"id": request.character_id})
+    character = await db.entities.find_one({"id": request.character_id, "kind": "character"})
     if not character:
         raise HTTPException(status_code=404, detail=f"Character {request.character_id} not found")
 
-    # Verify it's AI-controlled
-    character_data = character.get("data", {})
-    investigator_data = character_data.get("investigator", {})
-    is_ai_controlled = investigator_data.get("ai_controlled", False)
+    # Verify it's AI-controlled (stored at root level)
+    is_ai_controlled = character.get("ai_controlled", False)
 
     if not is_ai_controlled:
         raise HTTPException(
@@ -428,14 +426,17 @@ async def generate_ai_character_action(request: GenerateActionRequest):
         )
 
     # Fetch scene
-    scene = await db.scenes.find_one({"id": request.scene_id})
+    scene = await db.entities.find_one({"id": request.scene_id, "kind": "scene"})
     if not scene:
         raise HTTPException(status_code=404, detail=f"Scene {request.scene_id} not found")
 
     # Prepare character data for LLM
     character_name = character.get("name", "Unknown")
+    character_data = character.get("data", {})
+    investigator_data = character_data.get("investigator", {})
+    
     llm_character_data = {
-        "ai_personality": investigator_data.get("ai_personality", "analytical"),
+        "ai_personality": character.get("ai_personality", "analytical"),
         "occupation": investigator_data.get("occupation", "Investigator"),
         "backstory": investigator_data.get("backstory", ""),
         "skills": character_data.get("skills", {})
