@@ -4,10 +4,14 @@ Campaigns are stored in the gamerecords database.
 """
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
-from .models import Campaign, CampaignCreate, Change, Meta, EntityKind
+from .models import Campaign, CampaignCreate, Change, Meta, EntityKind, StoryArc
 from .database import get_gamerecords_db
+from .services.llm import llm_service
 from datetime import datetime
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/campaigns", tags=["campaigns"])
 
@@ -37,11 +41,33 @@ async def get_campaign(campaign_id: str):
 
 @router.post("", response_model=Campaign)
 async def create_campaign(campaign_data: CampaignCreate):
-    """Create a new campaign."""
+    """Create a new campaign, optionally generating story milestones via LLM."""
     db = get_gamerecords_db()
 
     # Generate unique ID
     campaign_id = f"campaign-{uuid.uuid4().hex[:8]}"
+
+    # Generate milestones if requested
+    milestones = []
+    if campaign_data.generate_milestones and campaign_data.setting:
+        try:
+            logger.info(f"Generating milestones for campaign '{campaign_data.name}'")
+            milestones = await llm_service.generate_campaign_milestones(
+                campaign_name=campaign_data.name,
+                setting=campaign_data.setting,
+                num_milestones=5
+            )
+            logger.info(f"Generated {len(milestones)} milestones")
+        except Exception as e:
+            logger.warning(f"Failed to generate milestones: {e}")
+            # Continue without milestones
+
+    # Build story_arc with milestones
+    story_arc = StoryArc(
+        tagline=campaign_data.setting.get("goal") if campaign_data.setting else None,
+        chapters=[],
+        milestones=milestones if milestones else None
+    )
 
     # Create campaign document
     campaign = Campaign(
@@ -51,6 +77,8 @@ async def create_campaign(campaign_data: CampaignCreate):
         name=campaign_data.name,
         description=campaign_data.description,
         status=campaign_data.status,
+        setting=campaign_data.setting,
+        story_arc=story_arc if (story_arc.tagline or milestones) else None,
         meta=Meta(created_by=campaign_data.created_by),
         changes=[Change(by=campaign_data.created_by, type="created")]
     )

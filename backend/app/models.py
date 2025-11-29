@@ -89,6 +89,7 @@ class StoryArc(BaseModel):
     """Story arc structure for campaigns."""
     tagline: Optional[str] = None
     chapters: List[str] = Field(default_factory=list)  # Chapter IDs
+    milestones: Optional[List[str]] = None  # LLM-generated story milestones
 
 
 class Campaign(BaseModel):
@@ -413,6 +414,8 @@ class CampaignCreate(BaseModel):
     description: Optional[str] = None
     status: CampaignStatus = CampaignStatus.PLANNING
     created_by: str
+    setting: Optional[Dict[str, Any]] = None  # tone, goal, story_elements, key_elements
+    generate_milestones: bool = False  # If true, use LLM to generate story milestones
 
 
 class CharacterCreate(BaseModel):
