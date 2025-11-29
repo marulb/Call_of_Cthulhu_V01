@@ -189,9 +189,6 @@ const emit = defineEmits<{
   close: []
 }>()
 
-// n8n webhook for dungeonmaster (SceneActiveTurn actions)
-const N8N_DUNGEONMASTER_WEBHOOK = import.meta.env.VITE_N8N_DUNGEONMASTER_WEBHOOK || 'http://localhost:5693/webhook/coc_dungeonmaster'
-
 const showNewForm = ref(false)
 const newAction = ref({
   character_id: '',
@@ -312,53 +309,8 @@ function submitTurn() {
     return
   }
 
-  // Build ordered actions payload from sorted drafts
-  const actions = sortedDrafts.value.map((d) => ({
-    actor_id: d.character_id,
-    player_id: d.player_id,
-    speak: d.speak,
-    act: d.act,
-    appearance: d.appearance,
-    emotion: d.emotion,
-    ooc: d.ooc,
-    order: d.order
-  }))
-
-  // Send directly to n8n dungeonmaster webhook with ActiveTurn payload
-  fetch(N8N_DUNGEONMASTER_WEBHOOK, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      ActiveTurn: actions,
-      session_id: props.sessionId,
-      scene_id: props.sceneId || null,
-      campaign_id: props.campaignId || null,
-      turn_id: props.turnId || null
-    })
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      // Try to extract a description from returned payload
-      let description = data?.output || data?.body || data?.text || data?.response || ''
-      if (!description && typeof data === 'object') {
-        // fallback: stringify
-        description = JSON.stringify(data)
-      }
-
-      // Try to extract summary
-      let summary = undefined
-      if (description) {
-        const sentences = description.split('. ')
-        if (sentences.length > 1) summary = sentences[0] + '.'
-        else if (description.length > 100) summary = description.slice(0, 97) + '...'
-      }
-
-      emit('dungeonmasterResponse', { description, summary, actions })
-    })
-    .catch((err) => {
-      console.error('Error calling DungeonMaster webhook:', err)
-      emit('dungeonmasterResponse', { error: err?.message || String(err), actions })
-    })
+  // Emit event to parent - parent handles API calls
+  emit('submitTurn')
 }
 </script>
 

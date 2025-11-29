@@ -34,7 +34,7 @@ class ChapterContext(BaseModel):
     id: str
     name: str
     summary: Optional[str] = None
-    order: int = 1
+    order: Optional[int] = 1
 
 
 class SceneContext(BaseModel):

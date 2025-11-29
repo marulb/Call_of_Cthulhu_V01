@@ -741,12 +741,85 @@ async function handleReorderDrafts(order: string[]) {
 }
 
 async function handleSubmitTurn() {
+  console.log('handleSubmitTurn called')
+  console.log('currentScene:', currentScene.value)
+  console.log('actionDrafts:', actionDrafts.value)
+  
   try {
-    if (!currentScene.value) return
+    if (!actionDrafts.value.length) {
+      console.error('No action drafts!')
+      alert('No actions to submit.')
+      return
+    }
+
+    let sceneId = currentScene.value?.id
+    
+    // Auto-create chapter and scene if needed
+    if (!sceneId) {
+      console.log('No scene, checking for chapter...')
+      
+      // Fetch existing chapters
+      const campaignId = sessionStore.selectedCampaign?.id
+      if (!campaignId) {
+        alert('No campaign selected')
+        return
+      }
+      
+      const chaptersRes = await fetch(`${API_BASE}/api/v1/chapters?campaign_id=${campaignId}&status=active`)
+      const chapters = await chaptersRes.json()
+      let chapterId = chapters.length > 0 ? chapters[0].id : null
+      
+      // Create chapter if needed
+      if (!chapterId) {
+        console.log('Creating new chapter...')
+        const chapterRes = await fetch(`${API_BASE}/api/v1/chapters`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            campaign_id: campaignId,
+            name: 'Chapter 1',
+            order: 1,
+            status: 'active',
+            created_by: sessionStore.playerId
+          })
+        })
+        if (!chapterRes.ok) {
+          alert('Failed to create chapter')
+          return
+        }
+        const newChapter = await chapterRes.json()
+        chapterId = newChapter.id
+        console.log('Created chapter:', chapterId)
+      }
+      
+      // Create scene
+      console.log('Creating new scene...')
+      const sceneRes = await fetch(`${API_BASE}/api/v1/scenes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chapter_id: chapterId,
+          name: 'Opening Scene',
+          order: 1,
+          status: 'in_progress',
+          participants: sessionStore.selectedCharacters.map(c => c.id),
+          created_by: sessionStore.playerId
+        })
+      })
+      if (!sceneRes.ok) {
+        alert('Failed to create scene')
+        return
+      }
+      const newScene = await sceneRes.json()
+      sceneId = newScene.id
+      currentScene.value = newScene
+      console.log('Created scene:', sceneId)
+    }
 
     // Create turn with all action drafts
     const actions = actionDrafts.value.map((draft) => ({
       actor_id: draft.character_id,
+      controller_owner: draft.player_id || sessionStore.playerId,
       speak: draft.speak,
       act: draft.act,
       appearance: draft.appearance,
@@ -755,7 +828,7 @@ async function handleSubmitTurn() {
     }))
 
     const turnData = {
-      scene_id: currentScene.value.id,
+      scene_id: sceneId,
       order: turns.value.length + 1,
       actions,
       created_by: sessionStore.playerId
@@ -767,27 +840,34 @@ async function handleSubmitTurn() {
       body: JSON.stringify(turnData)
     })
 
-    if (response.ok) {
-      const newTurn = await response.json()
-
-      // Submit turn for AI processing
-      await fetch(`${API_BASE}/api/v1/turns/${newTurn.id}/submit?submitted_by=${sessionStore.playerId}`, {
-        method: 'POST'
-      })
-
-      // Clear action drafts
-      await fetch(`${API_BASE}/api/v1/action-drafts/session/${sessionStore.currentSession!.id}/clear`, {
-        method: 'DELETE'
-      })
-
-      actionDrafts.value = []
-
-      // Broadcast turn submission
-      socket.emitTurnSubmitted(sessionStore.currentSession!.id, newTurn.id)
-
-      // Reload turns
-      await loadTurns()
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Turn creation failed:', response.status, errorText)
+      alert(`Failed to create turn: ${errorText}`)
+      return
     }
+
+    const newTurn = await response.json()
+
+    // Submit turn for AI processing (async - returns 202)
+    await fetch(`${API_BASE}/api/v1/turns/${newTurn.id}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionStore.currentSession!.id })
+    })
+
+    // Clear action drafts
+    await fetch(`${API_BASE}/api/v1/action-drafts/session/${sessionStore.currentSession!.id}/clear`, {
+      method: 'DELETE'
+    })
+
+    actionDrafts.value = []
+
+    // Broadcast turn submission
+    socket.emitTurnSubmitted(sessionStore.currentSession!.id, newTurn.id)
+
+    // Reload turns
+    await loadTurns()
   } catch (error) {
     console.error('Error submitting turn:', error)
     alert('Failed to submit turn. Please try again.')

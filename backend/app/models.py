@@ -41,8 +41,8 @@ class Change(BaseModel):
 
 class Meta(BaseModel):
     """Metadata for entity creation."""
-    created_by: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: Optional[str] = None
+    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
 
 
 # ============== NARRATIVE LAYER MODELS ==============
@@ -295,8 +295,9 @@ class Chapter(BaseModel):
     summary: Optional[str] = None  # AI-generated summary
     scenes: List[str] = Field(default_factory=list)  # Scene IDs
     status: str = "active"  # active, completed
-    meta: Meta
+    meta: Optional[Meta] = None
     changes: List[Change] = Field(default_factory=list)
+    order: Optional[int] = None
 
     class Config:
         use_enum_values = True
