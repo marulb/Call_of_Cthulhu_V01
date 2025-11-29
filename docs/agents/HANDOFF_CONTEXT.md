@@ -1,19 +1,45 @@
 # Agent Handoff Context
 
 > **Purpose:** Quick briefing for AI agents to continue work
-> **Last Updated:** 2025-11-29
-> **Last Agent:** Claude Code
-> **Session:** Phase 3 Step 3 REDO Complete - v2 Workflow Created
+> **Last Updated:** 2025-11-29 15:50 UTC
+> **Last Agent:** GitHub Copilot
+> **Session:** Phase 3 COMPLETE + Phase 4 Planning Started
 > **Word Limit:** ~500 words
 
 ---
 
 ## Active Task
 
-**📋 Current Task:** Phase 3 Step 5 - Integration Testing (UNBLOCKED)
-**Status:** ✅ Ready to execute - v2 workflows created and validated
-**Previous Blocker:** RESOLVED - LLM_Synthesizer_SubWF_v2.json created with valid JSON
-**Goal:** Import v2 workflows to n8n, execute manual testing protocol (3.5 hours)
+**📋 Current Task:** Phase 4 - Keeper Context & Story Flow Enhancement
+**Status:** 🟡 PLANNING - Task document created, awaiting discussion
+**Document:** `docs/agents/TASK_PHASE4_KEEPER_CONTEXT.md`
+**Goal:** Enhance Keeper with story context, add NPC support, fix frontend bugs
+
+---
+
+## Phase 3 Completion Summary
+
+✅ **Async callback architecture implemented:**
+- Backend services: context_assembly, skill_check, transition
+- 34-node DungeonMaster → 6-node simplified workflow
+- Turn submission returns 202, n8n calls back when LLM done
+- Feature flag: `USE_ASYNC_TURN_PROCESSING=true`
+
+✅ **E2E tested and working:**
+- Frontend submits turn → Backend creates turn + scene if needed
+- n8n processes LLM → Callback updates MongoDB
+- Socket.IO notifies frontend
+
+---
+
+## Known Issues (Phase 4 Scope)
+
+1. **Keeper lacks context** - No previous turn history, no campaign story
+2. **No NPC support** - Can't add NPCs to scenes
+3. **Frontend bugs:**
+   - Character sheet closes after ~1 second
+   - Combat section collapses on keystroke
+   - Relationships view similar issue
 
 ---
 
@@ -29,7 +55,7 @@
 
 ## What This Project Is
 
-**Call of Cthulhu RPG Campaign Manager** - A web app for running tabletop RPG sessions with AI-powered narrative generation. Players submit actions, an AI "Dungeon Master" generates story responses.
+**Call of Cthulhu RPG Campaign Manager** - A web app for running tabletop RPG sessions with AI-powered narrative generation. Players submit actions, an AI "Keeper" generates story responses.
 
 ## Current Architecture (3 Layers)
 
@@ -40,11 +66,11 @@
    - Calls n8n webhooks for AI processing
 
 2. **n8n Workflows** (`n8n_workflows/`)
-   - `DungeonMaster_Main.json` - Processes player turns, generates narrative
+   - `DungeonMaster_Main.json` - 6-node workflow (simplified)
+   - `LLM_Synthesizer_SubWF.json` - Builds prompts, calls Ollama
    - `Prophet_Main.json` - Q&A assistant for rules/lore
-   - Sub-workflows: Dice rolling, MongoDB queries, RAG (Qdrant), LLM calls (Ollama)
 
-3. **Vue Frontend** (`frontend/`) - Out of scope for this refactor
+3. **Vue Frontend** (`frontend/`) - Has bugs to fix
 
 ## The Problem
 
