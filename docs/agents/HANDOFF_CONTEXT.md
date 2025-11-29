@@ -1,17 +1,17 @@
 # Agent Handoff Context
 
 > **Purpose:** Quick briefing for AI agents to continue work
-> **Last Updated:** 2025-11-29 19:25 UTC
-> **Last Agent:** GitHub Copilot
-> **Session:** Phase 4 Milestones M1-M5+M8 COMPLETE
+> **Last Updated:** 2025-11-29 (M6 complete)
+> **Last Agent:** Claude Code
+> **Session:** Phase 4 Milestones M1-M6+M8 COMPLETE
 > **Word Limit:** ~500 words
 
 ---
 
 ## Active Task
 
-**📋 Current Task:** Phase 4 - Remaining: M6, M7
-**Status:** ✅ M1, M2, M3, M4, M5, M8, M8b COMPLETE | 🟡 M6, M7 NOT STARTED
+**📋 Current Task:** Phase 4 - Remaining: M7, M2-UI (optional)
+**Status:** ✅ M1, M2, M3, M4, M5, M6, M8, M8b COMPLETE | 🟡 M7, M2-UI NOT STARTED
 **Document:** `docs/agents/TASK_PHASE4_COMPLETE.md`
 **Commits:**
 - `5476c01` - M1+M3+M8 implementation
@@ -58,12 +58,27 @@
 - Created `frontend/src/composables/useMarkdown.ts` with XSS sanitization
 - `SceneProgress.vue` renders narrative with v-html
 
+### M6: AI-Controlled Characters ✅
+- Added `ai_controlled: bool` and `ai_personality: Optional[str]` to Character model
+- Updated CharacterCreate model to include new fields
+- Modified `routes_characters.py` to handle AI fields in create/update
+- Extended CharacterContext in `context_assembly.py` with AI fields
+- Updated LLM_Synthesizer_SubWF.json:
+  - Added AI character exception to dungeonmaster system prompt
+  - Added "AI-CONTROLLED CHARACTERS" section to user prompt
+  - LLM generates actions/dialogue for AI characters based on personality
+- Frontend UI updates:
+  - Added "AI Controlled" checkbox in CharacterSheetForm
+  - Added "AI Personality" dropdown (7 personality types)
+  - Updated TypeScript Character interface
+  - Fields only visible when AI controlled is checked
+
 ---
 
 ## Known Issues (Remaining Phase 4)
 
 1. ~~Keeper lacks context~~ ✅ FIXED - Now has realm/campaign/chapter/scene/previous turns
-2. **No NPC support** - M6, M7 not started (Claude Code recommended)
+2. **No NPC support** - M7 not started, M6 complete (AI characters working)
 3. ~~Frontend bugs~~ ✅ FIXED - All three bugs resolved
 
 ## New Files Created

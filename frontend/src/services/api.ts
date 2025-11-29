@@ -185,6 +185,8 @@ export interface Character {
   data: CharacterSheet
   ooc_notes: string
   profile_completed: boolean
+  ai_controlled: boolean
+  ai_personality?: string | null
   meta: { created_by: string; created_at: string }
   visibility?: string
   changes: Array<{ by: string; at: string; type?: string }>

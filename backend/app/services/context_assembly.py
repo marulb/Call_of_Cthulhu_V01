@@ -82,6 +82,8 @@ class CharacterContext(BaseModel):
     skills: List[CharacterSkill] = Field(default_factory=list)
     stats: Optional[CharacterStats] = None
     conditions: List[str] = Field(default_factory=list)
+    ai_controlled: bool = False
+    ai_personality: Optional[str] = None
 
 
 class LoreChunk(BaseModel):
@@ -424,7 +426,9 @@ class ContextAssemblyService:
                 age=investigator.get("age") if isinstance(investigator, dict) else None,
                 skills=skills,
                 stats=stats,
-                conditions=conditions
+                conditions=conditions,
+                ai_controlled=char.get("ai_controlled", False),
+                ai_personality=char.get("ai_personality")
             ))
 
         return characters

@@ -262,6 +262,8 @@ class Character(BaseModel):
     data: CharacterSheet = Field(default_factory=CharacterSheet)  # Full character sheet
     ooc_notes: str = ""  # Player's OOC notes and reminders
     profile_completed: bool = False  # Whether character sheet is fully filled out
+    ai_controlled: bool = False  # Whether character is AI-controlled
+    ai_personality: Optional[str] = None  # AI personality type (e.g., "cautious", "impulsive", "scholarly")
     meta: Meta
     visibility: str = "realm"
     changes: List[Change] = Field(default_factory=list)
@@ -429,6 +431,8 @@ class CharacterCreate(BaseModel):
     data: Optional[CharacterSheet] = None
     ooc_notes: Optional[str] = ""
     profile_completed: Optional[bool] = False
+    ai_controlled: Optional[bool] = False
+    ai_personality: Optional[str] = None
 
 
 class SessionCreate(BaseModel):

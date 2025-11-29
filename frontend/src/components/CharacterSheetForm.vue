@@ -88,6 +88,33 @@
               :readonly="readonly"
             />
           </div>
+          <div class="form-field">
+            <label>
+              <input
+                v-model="character.ai_controlled"
+                type="checkbox"
+                :disabled="readonly"
+                style="width: auto; margin-right: 0.5rem;"
+              />
+              AI Controlled
+            </label>
+          </div>
+          <div class="form-field" v-if="character.ai_controlled">
+            <label>AI Personality</label>
+            <select
+              v-model="character.ai_personality"
+              :disabled="readonly"
+            >
+              <option value="">None</option>
+              <option value="cautious">Cautious</option>
+              <option value="impulsive">Impulsive</option>
+              <option value="scholarly">Scholarly</option>
+              <option value="brave">Brave</option>
+              <option value="cowardly">Cowardly</option>
+              <option value="curious">Curious</option>
+              <option value="skeptical">Skeptical</option>
+            </select>
+          </div>
         </div>
       </CollapsibleSection>
 
@@ -359,6 +386,8 @@ function initializeCharacter(char: Partial<Character>): Partial<Character> {
     name: char.name || '',
     ooc_notes: char.ooc_notes || '',
     profile_completed: char.profile_completed || false,
+    ai_controlled: char.ai_controlled || false,
+    ai_personality: char.ai_personality || null,
     data: char.data || createEmptyCharacterSheet()
   }
 }
