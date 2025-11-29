@@ -37,8 +37,11 @@ This directory contains modular n8n workflows for the Call of Cthulhu game syste
    - Natural language generation using Ollama (gpt-oss:20b)
    - Builds context prompts from collected data
    - Supports both Prophet and DungeonMaster agent types
+   - **Prophet Mode**: Simple Q&A format
+   - **DungeonMaster Mode**: Structured JSON output with transition detection (Phase 3 enhancement)
    - Input: `{ question?, collected_data: {...}, agent_type: "prophet|dungeonmaster", references? }`
-   - Output: `{ answer, references, agent_type }`
+   - Output (Prophet): `{ answer, references, agent_type }`
+   - Output (DungeonMaster): `{ narrative, summary, transition: { type, reason, suggested_name, suggested_description }, requires_input, interaction_type, references, agent_type }`
 
 ### Main Workflows
 
@@ -52,7 +55,7 @@ This directory contains modular n8n workflows for the Call of Cthulhu game syste
    - Merges data from multiple sources before LLM synthesis
    - Response format: `{ output, references }`
 
-6. **DungeonMaster_Main.json**
+6. **DungeonMaster_Main.json** (Legacy - 34 nodes)
    - Story agent for processing player actions and generating narrative scenes
    - Webhook: `/coc_dungeonmaster`
    - Input: `{ ActiveTurn: [...], scene_id, session_id, campaign_id, turn_id }`
@@ -60,6 +63,18 @@ This directory contains modular n8n workflows for the Call of Cthulhu game syste
    - **CRITICAL**: Never takes actions on behalf of player characters, only resolves outcomes
    - Inline components: Skill check detection, interaction detection, Turn writing
    - Response format: `{ output, rules_applied[], requires_input, interaction_type }`
+   - **Status**: Deprecated in favor of v2 (kept for backward compatibility)
+
+7. **DungeonMaster_Main_v2.json** (Phase 3 Refactor - 6 nodes)
+   - Simplified story agent using async callback pattern
+   - Webhook: `/coc_dungeonmaster_v2`
+   - Input: `{ turn_id, callback_url, context: {...}, actions: [...] }`
+   - Workflow: Validate context → Prepare LLM input → Call LLM Synthesizer SubWF → Format callback → POST to backend
+   - **Removes**: MongoDB writes, context assembly, skill checks, scene creation (all moved to backend)
+   - **Keeps**: LLM orchestration only
+   - Callback format: `POST {callback_url}` with `{ turn_id, success, result: { narrative, transition, ... }, error }`
+   - **Requires**: Backend Phase 3 services (ContextAssemblyService, SkillCheckService, TransitionService)
+   - **Feature flag**: Backend must set `USE_ASYNC_TURN_PROCESSING=True`
 
 ## Setup Instructions
 
@@ -82,7 +97,18 @@ This directory contains modular n8n workflows for the Call of Cthulhu game syste
    1. MongoDB_Query_SubWF.json
    2. Qdrant_RAG_SubWF.json
    3. Dice_Roller_SubWF.json
-   4. LLM_Synthesizer_SubWF.json
+   4. LLM_Synthesizer_SubWF_v2.json  ← Use v2 for Phase 3
+   ```
+
+2. **Import Main Workflows**:
+   ```
+   5. Prophet_Main.json
+   6. DungeonMaster_Main_v2.json  ← Use v2 for Phase 3
+   ```
+
+   **Note**: For Phase 3 testing, rename v2 workflows in n8n UI:
+   - `LLM Synthesizer SubWF v2` → `LLM Synthesizer SubWF`
+   - Keep `DungeonMaster Main v2` as-is (different webhook path)
    ```
 
    In n8n:
@@ -101,7 +127,8 @@ This directory contains modular n8n workflows for the Call of Cthulhu game syste
 3. **Import Main Workflows**:
    ```
    5. Prophet_Main.json
-   6. DungeonMaster_Main.json
+   6. DungeonMaster_Main.json (legacy)
+   7. DungeonMaster_Main_v2.json (Phase 3 refactored version)
    ```
 
    - Import each file
@@ -110,12 +137,13 @@ This directory contains modular n8n workflows for the Call of Cthulhu game syste
 
 4. **Configure Webhook URLs**:
    - Prophet webhook: `http://<n8n-host>:5693/webhook/coc_prophet`
-   - DungeonMaster webhook: `http://<n8n-host>:5693/webhook/coc_dungeonmaster`
+   - DungeonMaster webhook (legacy): `http://<n8n-host>:5693/webhook/coc_dungeonmaster`
+   - DungeonMaster v2 webhook: `http://<n8n-host>:5693/webhook/coc_dungeonmaster_v2`
 
-   Update frontend environment variables:
+   Update backend environment variables for Phase 3:
    ```
-   VITE_N8N_PROPHET_WEBHOOK=http://localhost:5693/webhook/coc_prophet
-   VITE_N8N_DUNGEONMASTER_WEBHOOK=http://localhost:5693/webhook/coc_dungeonmaster
+   N8N_DUNGEONMASTER_V2_WEBHOOK=http://n8n:5678/webhook/coc_dungeonmaster_v2
+   USE_ASYNC_TURN_PROCESSING=True
    ```
 
 ## Testing
@@ -189,6 +217,147 @@ Expected output: Formatted dice results with success determination
 ```
 
 Expected output: Natural language answer with references
+
+### Test LLM Synthesizer SubWF (DungeonMaster Mode)
+
+**Phase 3 Enhancement:** DungeonMaster agent now returns structured JSON with transition detection.
+
+```json
+{
+  "agent_type": "dungeonmaster",
+  "collected_data": {
+    "campaign": {
+      "name": "The Haunting",
+      "setting": { "tone": "classic horror" }
+    },
+    "chapter": {
+      "name": "Investigation",
+      "summary": "Investigators look into Corbitt House"
+    },
+    "scene": {
+      "name": "The Foyer",
+      "location": "Corbitt House entrance",
+      "summary": "Party just arrived"
+    },
+    "previous_turns": [],
+    "characters": [
+      {
+        "name": "Dr. Morgan",
+        "occupation": "Physician"
+      }
+    ],
+    "lore_context": [],
+    "skill_checks": [
+      {
+        "character_name": "Dr. Morgan",
+        "skill_name": "Spot Hidden",
+        "success_level": "Regular Success",
+        "rolled": 32,
+        "target_value": 45
+      }
+    ]
+  },
+  "references": []
+}
+```
+
+**Expected Output:**
+```json
+{
+  "narrative": "Dr. Morgan steps into the dusty foyer, eyes scanning the shadows. The keen physician notices subtle scratches on the floorboards, suggesting something has been dragged across them recently...",
+  "summary": "Dr. Morgan examines the foyer and notices drag marks",
+  "transition": {
+    "type": "none",
+    "reason": null,
+    "suggested_name": null,
+    "suggested_description": null
+  },
+  "requires_input": false,
+  "interaction_type": "DISCOVERY",
+  "agent_type": "dungeonmaster",
+  "references": []
+}
+```
+
+**Transition Detection Example (Scene Change):**
+```json
+{
+  "narrative": "You push open the heavy door and descend the creaking wooden stairs. The air grows colder and damper with each step. At the bottom, you find yourself in a low-ceilinged basement, its stone walls slick with moisture...",
+  "summary": "Party descends to the basement",
+  "transition": {
+    "type": "scene",
+    "reason": "Location change to basement (different floor, significant atmospheric shift)",
+    "suggested_name": "The Basement",
+    "suggested_description": "A damp, low-ceilinged basement with stone walls"
+  },
+  "requires_input": false,
+  "interaction_type": "NONE",
+  "agent_type": "dungeonmaster",
+  "references": []
+}
+```
+
+### Test DungeonMaster Main v2 (Full Workflow)
+
+**Phase 3 Enhancement:** v2 workflow receives pre-assembled context bundle from backend.
+
+```json
+{
+  "turn_id": "turn-test-001",
+  "callback_url": "http://backend:8000/api/v1/internal/turns/turn-test-001/complete",
+  "timestamp": "2025-11-29T12:00:00Z",
+  "context": {
+    "campaign": {
+      "name": "The Haunting",
+      "setting": { "tone": "cosmic horror" }
+    },
+    "chapter": {
+      "name": "Investigation",
+      "summary": "Looking into Corbitt House"
+    },
+    "scene": {
+      "name": "The Foyer",
+      "location": "Corbitt House entrance"
+    },
+    "previous_turns": [],
+    "characters": [
+      { "name": "Dr. Morgan", "occupation": "Physician" }
+    ],
+    "lore_context": [],
+    "skill_checks": []
+  },
+  "actions": [
+    {
+      "character": "Dr. Morgan",
+      "act": "Examines the dusty entrance hall carefully"
+    }
+  ]
+}
+```
+
+**Expected Workflow:**
+1. ✅ Webhook receives context bundle
+2. ✅ Validates required fields (turn_id, callback_url, context, actions)
+3. ✅ Formats for LLM Synthesizer SubWF
+4. ✅ Calls LLM (returns narrative + transition)
+5. ✅ Formats callback payload
+6. ✅ POSTs to backend callback URL
+
+**Backend Callback Receives:**
+```json
+{
+  "turn_id": "turn-test-001",
+  "success": true,
+  "result": {
+    "narrative": "Dr. Morgan steps into the dusty foyer...",
+    "summary": "Dr. Morgan examines the entrance",
+    "transition": { "type": "none" },
+    "requires_input": false,
+    "interaction_type": "DISCOVERY"
+  },
+  "error": null
+}
+```
 
 ## Troubleshooting
 

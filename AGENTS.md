@@ -25,18 +25,41 @@
 │   │   ├── ARCHITECTURE_OVERVIEW.md   ← System design
 │   │   ├── DATA_FLOW.md               ← How data moves
 │   │   ├── FRICTION_POINTS.md         ← Known problems
-│   │   └── REFACTORING_PLAN.md        ← (Phase 2 output)
+│   │   └── REFACTORING_PLAN.md        ← Implementation plan
 │   ├── specifications/
 │   │   ├── GAMEPLAY_UI.md             ← Frontend spec
 │   │   └── DATA_MODEL.md              ← MongoDB schema
 │   ├── decisions/
 │   │   └── ADR-*.md                   ← Architecture Decision Records
 │   └── agents/
-│       └── HANDOFF_CONTEXT.md         ← Quick briefing for agents
+│       ├── HANDOFF_CONTEXT.md         ← Quick briefing for agents
+│       ├── TASK_*.md                  ← Current task specifications
+│       └── reports/
+│           └── REPORT_*.md            ← Completion reports per step
 ├── backend/app/                 ← FastAPI routes + models
 ├── frontend/src/                ← Vue 3 components
 └── n8n_workflows/               ← Workflow JSON files + README
 ```
+
+---
+
+## Output Rules
+
+**Keep chat responses minimal.** Write detailed output to files:
+
+1. **Task completion** → Write to `docs/agents/reports/REPORT_<PHASE>_<STEP>.md`
+2. **Handoff updates** → Write to `docs/agents/HANDOFF_CONTEXT.md`
+3. **Design docs** → Write to `docs/architecture/` or `docs/decisions/`
+
+**Chat response format after completing a task:**
+```
+✅ <Step Name> Complete
+
+Report: docs/agents/reports/REPORT_<X>.md
+Next: docs/agents/TASK_<X>.md
+```
+
+Do NOT paste file contents or long summaries in chat.
 
 ---
 

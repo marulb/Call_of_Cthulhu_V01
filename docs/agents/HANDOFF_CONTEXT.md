@@ -3,16 +3,17 @@
 > **Purpose:** Quick briefing for AI agents to continue work
 > **Last Updated:** 2025-11-29
 > **Last Agent:** Claude Code
-> **Session:** Phase 3 Step 1 Complete - Backend Services Created
+> **Session:** Phase 3 Step 3 REDO Complete - v2 Workflow Created
 > **Word Limit:** ~500 words
 
 ---
 
 ## Active Task
 
-**📋 Current Task:** Phase 3 Step 2 - Backend Endpoints (Ready to Start)
-**Status:** Step 1 complete, paused for review before Step 2
-**Goal:** Create new async turn submission and callback endpoints
+**📋 Current Task:** Phase 3 Step 5 - Integration Testing (UNBLOCKED)
+**Status:** ✅ Ready to execute - v2 workflows created and validated
+**Previous Blocker:** RESOLVED - LLM_Synthesizer_SubWF_v2.json created with valid JSON
+**Goal:** Import v2 workflows to n8n, execute manual testing protocol (3.5 hours)
 
 ---
 
@@ -100,7 +101,198 @@ docker-compose up
 
 ## What Was Completed
 
-### Phase 3 Step 1: Backend Services ✅ (Just Completed)
+### Phase 3 Step 3 REDO: LLM Synthesizer Enhancement ✅ (Just Completed)
+
+Created `LLM_Synthesizer_SubWF_v2.json` with transition detection capability.
+
+**Reason:** Original Step 3 changes were lost/corrupted - file had JSON syntax error
+
+**What Was Created:**
+- ✅ `LLM_Synthesizer_SubWF_v2.json` (173 lines, +66 from original)
+- ✅ Enhanced DungeonMaster system prompt with transition detection rules
+- ✅ Added JSON mode to Ollama call for dungeonmaster agent
+- ✅ Enhanced Extract Answer node to parse structured JSON output
+- ✅ Graceful fallback if JSON parsing fails
+- ✅ Validated with `python3 -m json.tool` - PASSES
+
+**Key Enhancements:**
+1. **Transition Detection Rules:**
+   - NEW SCENE: Location change within building, time skip <1 day, dramatic event
+   - NEW CHAPTER: Major location change, time skip >1 day, story milestone
+   - NO TRANSITION: Same location/timeframe, dialogue, combat in progress
+
+2. **Structured Output:**
+   ```json
+   {
+     "narrative": "...",
+     "summary": "...",
+     "transition": {
+       "type": "scene/chapter/none",
+       "reason": "...",
+       "suggested_name": "...",
+       "suggested_description": "..."
+     },
+     "requires_input": false,
+     "interaction_type": "DISCOVERY"
+   }
+   ```
+
+3. **Backward Compatibility:**
+   - Prophet agent unchanged (simple Q&A format)
+   - Only dungeonmaster agent uses JSON mode
+
+**Report:** `docs/agents/reports/REPORT_PHASE3_STEP3_REDO.md`
+
+---
+
+### Phase 3 Step 5: End-to-End Integration Testing ✅ UNBLOCKED
+
+Testing framework created. Ready for manual execution with v2 workflows.
+
+**Status:** Blocker removed - LLM_Synthesizer_SubWF_v2.json created and validated
+
+**What Was Done:**
+- ✅ Code review of backend async implementation (routes_turns.py)
+- ✅ Validation of DungeonMaster_Main_v2.json (valid JSON)
+- ✅ Validation of LLM_Synthesizer_SubWF_v2.json (valid JSON) - FIXED
+- ✅ Created comprehensive testing framework and manual test protocol
+- ✅ Identified implementation gaps and recommendations
+
+**Tests Ready for Execution (manual):**
+- Test 1: Backend mock callback
+- Test 2: n8n workflow import (v2 workflows)
+- Test 3: n8n webhook test
+- Test 4: Full E2E flow
+- Test 5: Scene transition detection
+- Tests 6-8: Optional tests
+
+**Manual Testing Protocol:**
+- 6-phase testing approach (~3.5 hours)
+- Infrastructure validation → Import v2 workflows → Backend testing → E2E testing
+- Complete debug commands and environment checklist
+
+**Implementation Status:**
+- Backend: ✅ Excellent - async callback pattern well-implemented
+- DungeonMaster_Main_v2: ✅ Valid JSON, ready to import
+- LLM_Synthesizer_SubWF_v2: ✅ Valid JSON, ready to import
+
+**Reports:**
+- `docs/agents/reports/REPORT_PHASE3_STEP5.md` (testing framework)
+- `docs/agents/reports/REPORT_PHASE3_STEP3_REDO.md` (blocker resolution)
+
+**Next Action:** Import v2 workflows to n8n, execute manual testing protocol
+
+---
+
+### Phase 3 Step 4: DungeonMaster v2 Workflow ✅
+
+Created simplified DungeonMaster Main v2 workflow (82% node reduction).
+
+**File Created:**
+- **DungeonMaster_Main_v2.json** (6 nodes, down from 34)
+  - Webhook: `/coc_dungeonmaster_v2`
+  - Workflow: Receive context bundle → Validate → Prepare LLM input → Call LLM Synthesizer SubWF → Format callback → POST to backend
+  - Async callback pattern (no 60s blocking)
+  - Pure LLM orchestration (no MongoDB writes)
+
+**What Was Removed:**
+- Scene/chapter creation (6 nodes) → Backend TransitionService
+- Turn creation (3 nodes) → Turn exists before n8n called
+- Skill check logic (8 nodes) → Backend SkillCheckService
+- Context assembly (7 nodes) → Backend ContextAssemblyService
+- MongoDB writes (3 nodes) → Backend owns all writes
+- Context preservation (9 nodes) → Not needed with upfront context
+
+**Integration:**
+- Input: Pre-assembled context bundle from backend
+- Output: Callback to `POST /api/v1/internal/turns/{turn_id}/complete`
+- LLM: Uses enhanced LLM Synthesizer from Step 3
+
+**Documentation:**
+- Updated `n8n_workflows/README.md` with v2 description and tests
+- Marked v1 as "Legacy - 34 nodes"
+- Added backend environment variable configuration
+
+**Report:** `docs/agents/reports/REPORT_PHASE3_STEP4.md`
+
+---
+
+### Phase 3 Step 3: LLM Synthesizer Enhancement ✅
+
+Enhanced the LLM Synthesizer n8n sub-workflow for transition detection.
+
+**File Modified:**
+- **LLM_Synthesizer_SubWF.json** (~120 lines changed)
+  - Enhanced dungeonmaster system prompt with transition detection rules
+  - Added JSON mode for dungeonmaster agent (`format: 'json'`)
+  - Implemented structured JSON parsing in Extract Answer node
+  - Added graceful fallback for malformed JSON responses
+
+**Transition Detection:**
+- NEW SCENE: Location change within building, time skip < 1 day, dramatic event, discovery
+- NEW CHAPTER: Major location change, time skip > 1 day, story milestone, tone shift
+- NO TRANSITION: Continuing in same location/timeframe, dialogue, combat in progress
+
+**Output Schema (DungeonMaster):**
+```json
+{
+  "narrative": "...",
+  "summary": "...",
+  "transition": {
+    "type": "scene OR chapter OR none",
+    "reason": "...",
+    "suggested_name": "...",
+    "suggested_description": "..."
+  },
+  "requires_input": true/false,
+  "interaction_type": "CHOICE|COMBAT|QUESTION|DISCOVERY|NONE"
+}
+```
+
+**Documentation:**
+- Updated `n8n_workflows/README.md` with schema and test examples
+- Maintained backward compatibility with Prophet agent
+
+**Report:** `docs/agents/reports/REPORT_PHASE3_STEP3.md`
+
+---
+
+### Phase 3 Step 2: Backend Endpoints ✅
+
+Modified backend to add async turn processing with callback pattern.
+
+**Files Modified:**
+1. **routes_turns.py** (~400 lines added)
+   - Modified `submit_turn()` endpoint with feature flag routing
+   - Created `submit_turn_async()` - async turn submission (returns 202)
+   - Created `complete_turn_callback()` - n8n callback handler
+   - Created `get_turn_status()` - status polling endpoint
+   - Integrated all three services from Step 1
+   - Fire-and-forget webhook call to n8n
+
+2. **socketio_manager.py** (~70 lines added)
+   - `emit_turn_processing()` - Turn submitted event
+   - `emit_turn_completed()` - Turn done event
+   - `emit_turn_failed()` - Error event
+   - `emit_scene_created()` - New scene event
+   - `emit_chapter_created()` - New chapter event
+
+**New Endpoints:**
+- `POST /api/v1/turns/{turn_id}/submit` - Async submit (202 Accepted)
+- `POST /api/v1/internal/turns/{turn_id}/complete` - n8n callback
+- `GET /api/v1/turns/{turn_id}/status` - Status polling
+
+**Architecture:**
+- Backend returns 202 immediately (no 60s blocking)
+- n8n calls back when LLM processing completes
+- Socket.IO events notify frontend in real-time
+- Feature flag `USE_ASYNC_TURN_PROCESSING` for gradual rollout
+
+**Report:** `docs/agents/reports/REPORT_PHASE3_STEP2.md`
+
+---
+
+### Phase 3 Step 1: Backend Services ✅
 
 Created three new backend services in `backend/app/services/`:
 

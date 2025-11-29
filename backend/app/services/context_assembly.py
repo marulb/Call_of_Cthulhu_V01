@@ -122,13 +122,13 @@ class ContextBundle(BaseModel):
     """
     Complete context bundle sent to n8n for LLM processing.
 
-    Matches the schema defined in REFACTORING_PLAN.md Section 5.
+    Matches the schema expected by DungeonMaster_Main workflow.
     """
     turn_id: str
     callback_url: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     context: ContextData
-    current_turn: CurrentTurnActions
+    actions: List[Dict[str, Any]] = Field(default_factory=list)  # Top-level for n8n workflow
 
 
 # ============== Context Assembly Service ==============
@@ -212,16 +212,14 @@ class ContextAssemblyService:
             skill_checks=skill_checks or []
         )
 
-        current_turn = CurrentTurnActions(
-            order=turn.get("order", 1),
-            actions=turn.get("actions", [])
-        )
+        # Get actions from turn for top-level actions field
+        turn_actions = turn.get("actions", [])
 
         bundle = ContextBundle(
             turn_id=turn_id,
             callback_url=callback_url,
             context=context_data,
-            current_turn=current_turn
+            actions=turn_actions  # Top-level for n8n workflow compatibility
         )
 
         logger.info(

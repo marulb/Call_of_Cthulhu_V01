@@ -53,6 +53,13 @@ N8N_WEBHOOK_TIMEOUT = int(os.getenv("N8N_WEBHOOK_TIMEOUT", "60"))
 CALLBACK_TIMEOUT = int(os.getenv("CALLBACK_TIMEOUT", "10"))
 
 
+# ============== n8n API Configuration ==============
+
+# n8n REST API for workflow management (used by agents and backend)
+N8N_API_URL = os.getenv("N8N_API_URL", "http://localhost:5693/api/v1")
+N8N_API_KEY = os.getenv("N8N_API_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1MDYwNzhjMC03YjhhLTQ2MjAtOGYxMi03Nzc2ZTVmMzRlYjEiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzY0NDI1MTgzLCJleHAiOjE3NjY5ODQ0MDB9.5XHb8sXtpXFsSwYBKgAHMUM1kjR46SE1uJX54pYq1dM")
+
+
 # ============== Logging ==============
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")

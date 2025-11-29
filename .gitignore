@@ -7,7 +7,25 @@ database/
 
 # IDE
 .claude/
+.vscode/
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+dist/
+
+# n8n local data (not workflows)
+n8n/*.sqlite*
+n8n/binaryData/
+n8n/tmp/
+n8n/crash.journal

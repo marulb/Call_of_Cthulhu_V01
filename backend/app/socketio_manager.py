@@ -306,6 +306,74 @@ async def reject_join_request(sid, data):
         await sio.emit('join_rejected', {'reason': reason}, to=requesting_sid)
 
 
+# ============== TURN PROCESSING EVENTS (Phase 3 - Async Architecture) ==============
+
+async def emit_turn_processing(session_id: str, turn_id: str):
+    """
+    Notify session that turn is being processed.
+
+    Emitted when turn is submitted and enters processing state.
+    """
+    await sio.emit('turn_processing', {
+        'turn_id': turn_id,
+        'status': 'processing'
+    }, room=f"session:{session_id}")
+
+
+async def emit_turn_completed(session_id: str, turn_id: str, reaction: dict, scene_id: str):
+    """
+    Notify session that turn processing is complete.
+
+    Emitted when n8n callback delivers the narrative.
+    """
+    await sio.emit('turn_completed', {
+        'turn_id': turn_id,
+        'reaction': reaction,
+        'scene_id': scene_id,
+        'status': 'completed'
+    }, room=f"session:{session_id}")
+
+
+async def emit_turn_failed(session_id: str, turn_id: str, error: str):
+    """
+    Notify session that turn processing failed.
+
+    Emitted when an error occurs during processing.
+    """
+    await sio.emit('turn_failed', {
+        'turn_id': turn_id,
+        'error': error,
+        'status': 'failed'
+    }, room=f"session:{session_id}")
+
+
+async def emit_scene_created(session_id: str, scene: dict):
+    """
+    Notify session that a new scene was created.
+
+    Emitted when LLM detects a scene transition.
+    """
+    await sio.emit('scene_created', {
+        'scene_id': scene.get('scene_id'),
+        'name': scene.get('name'),
+        'chapter_id': scene.get('chapter_id')
+    }, room=f"session:{session_id}")
+
+
+async def emit_chapter_created(session_id: str, chapter: dict, scene: dict):
+    """
+    Notify session that a new chapter was created.
+
+    Emitted when LLM detects a chapter transition.
+    """
+    await sio.emit('chapter_created', {
+        'chapter_id': chapter.get('chapter_id'),
+        'chapter_name': chapter.get('name'),
+        'scene_id': scene.get('scene_id'),
+        'scene_name': scene.get('name')
+    }, room=f"session:{session_id}")
+
+
 # Function to get Socket.IO ASGI app
 def get_socketio_app(fastapi_app):
     """Wrap FastAPI app with Socket.IO."""

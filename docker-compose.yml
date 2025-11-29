@@ -28,6 +28,10 @@ services:
       - MONGODB_URL=mongodb://martin_usr:CorzBRxa8Xz3iAv90VmH@mongodb:27017/call_of_cthulhu_gamerecords?authSource=admin
       - QDRANT_URL=http://qdrant:6333
       - OLLAMA_URL=http://host.docker.internal:11434
+      # Phase 3: Async turn processing with callback pattern
+      - USE_ASYNC_TURN_PROCESSING=true
+      - N8N_BASE_URL=http://n8n:5678
+      - BACKEND_BASE_URL=http://backend:8000
     depends_on:
       - mongodb
       - qdrant
