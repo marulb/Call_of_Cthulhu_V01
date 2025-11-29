@@ -1,45 +1,47 @@
 # Agent Handoff Context
 
 > **Purpose:** Quick briefing for AI agents to continue work
-> **Last Updated:** 2025-11-29 15:50 UTC
+> **Last Updated:** 2025-11-29 18:30 UTC
 > **Last Agent:** GitHub Copilot
-> **Session:** Phase 3 COMPLETE + Phase 4 Planning Started
+> **Session:** Phase 4 Milestones M1+M3+M8 COMPLETE
 > **Word Limit:** ~500 words
 
 ---
 
 ## Active Task
 
-**📋 Current Task:** Phase 4 - Keeper Context & Story Flow Enhancement
-**Status:** 🟡 PLANNING - Task document created, awaiting discussion
-**Document:** `docs/agents/TASK_PHASE4_KEEPER_CONTEXT.md`
-**Goal:** Enhance Keeper with story context, add NPC support, fix frontend bugs
+**📋 Current Task:** Phase 4 - Continue with remaining milestones
+**Status:** ✅ M1, M3, M8 COMPLETE | 🟡 M2, M4-M7 NOT STARTED
+**Document:** `docs/agents/TASK_PHASE4_COMPLETE.md`
+**Commit:** `5476c01` - M1+M3+M8 implementation
 
 ---
 
-## Phase 3 Completion Summary
+## Completed This Session (M1+M3+M8)
 
-✅ **Async callback architecture implemented:**
-- Backend services: context_assembly, skill_check, transition
-- 34-node DungeonMaster → 6-node simplified workflow
-- Turn submission returns 202, n8n calls back when LLM done
-- Feature flag: `USE_ASYNC_TURN_PROCESSING=true`
+### M1: Realm/Campaign Settings ✅
+- Added `RealmContext` to `context_assembly.py` with `setting.tone`, `setting.notes`
+- `CampaignContext` now passes full `setting` dict (tone, goal, key_elements, story_elements)
+- `DungeonMaster_Main.json` updated to include realm in `collected_data`
+- `LLM_Synthesizer_SubWF.json` prompt now has REALM CONTEXT, CHAPTER CONTEXT, CURRENT SCENE sections
 
-✅ **E2E tested and working:**
-- Frontend submits turn → Backend creates turn + scene if needed
-- n8n processes LLM → Callback updates MongoDB
-- Socket.IO notifies frontend
+### M3: Keeper Context Window ✅
+- Previous turns already included in context (was done in Phase 3)
+- Scene summary, chapter summary passed to LLM prompt
+- Enhanced prompt building with full narrative hierarchy
+
+### M8: Frontend Bug Fixes ✅
+- **CharacterSheet close bug:** Autosave no longer triggers close (added `isAutosave` param)
+- **CombatSection collapse:** Fixed v-for key that included `weapon.name` (caused re-render on type)
+- **RelationshipsSection collapse:** Fixed v-for key that included `rel.object`
 
 ---
 
-## Known Issues (Phase 4 Scope)
+## Known Issues (Remaining Phase 4)
 
-1. **Keeper lacks context** - No previous turn history, no campaign story
-2. **No NPC support** - Can't add NPCs to scenes
-3. **Frontend bugs:**
-   - Character sheet closes after ~1 second
-   - Combat section collapses on keystroke
-   - Relationships view similar issue
+1. ~~Keeper lacks context~~ ✅ FIXED - Now has realm/campaign/chapter/scene/previous turns
+2. **No NPC support** - M7 not started
+3. ~~Frontend bugs~~ ✅ FIXED - All three bugs resolved
 
 ---
 
