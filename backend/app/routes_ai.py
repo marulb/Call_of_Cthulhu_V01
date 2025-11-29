@@ -8,6 +8,9 @@ from typing import List, Optional
 from datetime import datetime
 import random
 import httpx
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
@@ -368,6 +371,116 @@ async def process_dungeonmaster_turn(request: DungeonMasterRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Error processing DungeonMaster request: {str(e)}"
+        )
+
+
+# ============== AI CHARACTER ACTION GENERATION ==============
+
+class GenerateActionRequest(BaseModel):
+    """Request to generate an action for an AI-controlled character."""
+    character_id: str
+    scene_id: str
+    session_id: str
+    existing_actions: Optional[List[dict]] = []
+
+
+class GenerateActionResponse(BaseModel):
+    """Generated action for AI character."""
+    character_id: str
+    character_name: str
+    speak: str = ""
+    act: str = ""
+    appearance: str = ""
+    emotion: str = ""
+    ooc: str = ""
+
+
+@router.post("/generate-action", response_model=GenerateActionResponse)
+async def generate_ai_character_action(request: GenerateActionRequest):
+    """
+    Generate an action for an AI-controlled character.
+
+    This endpoint:
+    1. Fetches character data (personality, skills, backstory)
+    2. Fetches scene context (location, previous turns)
+    3. Calls LLMService to generate contextual action
+    4. Returns action draft ready to be added to turn
+    """
+    from .database import get_gamerecords_db
+    from .services.llm import llm_service
+
+    db = get_gamerecords_db()
+
+    # Fetch character
+    character = await db.characters.find_one({"id": request.character_id})
+    if not character:
+        raise HTTPException(status_code=404, detail=f"Character {request.character_id} not found")
+
+    # Verify it's AI-controlled
+    character_data = character.get("data", {})
+    investigator_data = character_data.get("investigator", {})
+    is_ai_controlled = investigator_data.get("ai_controlled", False)
+
+    if not is_ai_controlled:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Character {character.get('name')} is not AI-controlled"
+        )
+
+    # Fetch scene
+    scene = await db.scenes.find_one({"id": request.scene_id})
+    if not scene:
+        raise HTTPException(status_code=404, detail=f"Scene {request.scene_id} not found")
+
+    # Prepare character data for LLM
+    character_name = character.get("name", "Unknown")
+    llm_character_data = {
+        "ai_personality": investigator_data.get("ai_personality", "analytical"),
+        "occupation": investigator_data.get("occupation", "Investigator"),
+        "backstory": investigator_data.get("backstory", ""),
+        "skills": character_data.get("skills", {})
+    }
+
+    # Prepare scene context
+    scene_context = {
+        "name": scene.get("name", "Unknown Location"),
+        "location": scene.get("location", ""),
+        "description": scene.get("description", "")
+    }
+
+    # Format existing actions
+    formatted_actions = []
+    for action in request.existing_actions:
+        formatted_actions.append({
+            "character_name": action.get("character_name", "Someone"),
+            "speak": action.get("speak", ""),
+            "act": action.get("act", "")
+        })
+
+    # Generate action using LLM
+    try:
+        action_data = await llm_service.generate_character_action(
+            character_name=character_name,
+            character_data=llm_character_data,
+            scene_context=scene_context,
+            existing_actions=formatted_actions
+        )
+
+        return GenerateActionResponse(
+            character_id=request.character_id,
+            character_name=character_name,
+            speak=action_data.get("speak", ""),
+            act=action_data.get("act", ""),
+            appearance=action_data.get("appearance", ""),
+            emotion=action_data.get("emotion", ""),
+            ooc=action_data.get("ooc", "")
+        )
+
+    except Exception as e:
+        logger.error(f"Error generating AI action for {character_name}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate action: {str(e)}"
         )
 
 

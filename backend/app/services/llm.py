@@ -255,6 +255,166 @@ List {num_milestones} milestones:"""
             "Final resolution"
         ][:num_milestones]
 
+    async def generate_character_action(
+        self,
+        character_name: str,
+        character_data: Dict[str, Any],
+        scene_context: Dict[str, Any],
+        existing_actions: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Generate an action for an AI-controlled character.
+
+        Args:
+            character_name: Name of the character
+            character_data: Character sheet data (personality, occupation, skills, backstory)
+            scene_context: Current scene info (name, location, previous turns)
+            existing_actions: Other player actions this turn (so AI can react)
+
+        Returns:
+            Action dict with {speak, act, appearance, emotion, ooc}
+        """
+        # Extract character details
+        personality = character_data.get("ai_personality", "analytical")
+        occupation = character_data.get("occupation", "Investigator")
+        backstory = character_data.get("backstory", "")
+
+        # Extract top skills
+        skills_data = character_data.get("skills", {})
+        top_skills = []
+        if isinstance(skills_data, dict):
+            # Extract skills with values > 50
+            for skill_name, skill_value in skills_data.items():
+                if isinstance(skill_value, dict):
+                    reg_value = skill_value.get("reg", 0)
+                    try:
+                        value = int(reg_value) if reg_value else 0
+                    except (ValueError, TypeError):
+                        value = 0
+                    if value > 50:
+                        top_skills.append(f"{skill_name} ({value}%)")
+                elif isinstance(skill_value, (int, str)):
+                    try:
+                        value = int(skill_value)
+                        if value > 50:
+                            top_skills.append(f"{skill_name} ({value}%)")
+                    except (ValueError, TypeError):
+                        pass
+
+        # Limit to top 5 skills
+        top_skills = top_skills[:5]
+
+        # Extract scene context
+        scene_name = scene_context.get("name", "Unknown Location")
+        scene_location = scene_context.get("location", "")
+        scene_description = scene_context.get("description", "")
+
+        # Format existing actions
+        other_actions_text = ""
+        if existing_actions:
+            action_lines = []
+            for action in existing_actions:
+                char = action.get("character_name", "Someone")
+                if action.get("speak"):
+                    action_lines.append(f'- {char} says: "{action["speak"]}"')
+                if action.get("act"):
+                    action_lines.append(f'- {char} does: {action["act"]}')
+            other_actions_text = "\n".join(action_lines)
+
+        system_prompt = f"""You are roleplaying as {character_name}, an AI-controlled character in a Call of Cthulhu RPG.
+
+CHARACTER PROFILE:
+- Name: {character_name}
+- Occupation: {occupation}
+- Personality: {personality}
+- Top Skills: {', '.join(top_skills) if top_skills else 'General investigator skills'}
+{f"- Background: {backstory[:200]}" if backstory else ""}
+
+BEHAVIOR GUIDELINES:
+- Act according to your personality type: {personality}
+- Use your skills and occupation to inform your actions
+- Respond naturally to what other characters are doing
+- Stay in character - you are not the Keeper/narrator
+- Be concise and focused on your character's immediate actions
+- Show emotion and personality through dialogue and actions
+
+RESPONSE FORMAT:
+Return ONLY a JSON object with these fields (all optional):
+{{
+  "speak": "What your character says (dialogue)",
+  "act": "What your character does (physical action)",
+  "appearance": "How your character looks/appears",
+  "emotion": "Your character's emotional state",
+  "ooc": "Out-of-character notes (rarely needed)"
+}}
+
+Example response:
+{{
+  "speak": "We should examine that bookshelf more closely.",
+  "act": "cautiously approaches the dusty shelves, flashlight in hand",
+  "emotion": "curious but wary"
+}}"""
+
+        user_prompt = f"""CURRENT SCENE: {scene_name}
+{f"Location: {scene_location}" if scene_location else ""}
+{f"Description: {scene_description[:300]}" if scene_description else ""}
+
+OTHER PLAYER ACTIONS THIS TURN:
+{other_actions_text if other_actions_text else "No other actions yet - you're acting first"}
+
+As {character_name}, what do you do? Respond with JSON only:"""
+
+        response = await self._call_llm(
+            system_prompt,
+            user_prompt,
+            temperature=0.8,  # Higher temperature for more varied responses
+            max_tokens=300
+        )
+
+        if response:
+            # Try to parse JSON response
+            import json
+            try:
+                # Clean up potential markdown formatting
+                cleaned = response.strip()
+                if cleaned.startswith("```json"):
+                    cleaned = cleaned[7:]
+                if cleaned.startswith("```"):
+                    cleaned = cleaned[3:]
+                if cleaned.endswith("```"):
+                    cleaned = cleaned[:-3]
+                cleaned = cleaned.strip()
+
+                action_data = json.loads(cleaned)
+
+                # Validate and return
+                return {
+                    "speak": action_data.get("speak", ""),
+                    "act": action_data.get("act", ""),
+                    "appearance": action_data.get("appearance", ""),
+                    "emotion": action_data.get("emotion", ""),
+                    "ooc": action_data.get("ooc", "")
+                }
+            except json.JSONDecodeError:
+                logger.warning(f"Failed to parse LLM JSON response: {response}")
+                # Fallback: treat response as action text
+                return {
+                    "speak": "",
+                    "act": response[:200],
+                    "appearance": "",
+                    "emotion": "",
+                    "ooc": ""
+                }
+
+        # Fallback action if LLM fails
+        return {
+            "speak": "I'm observing the situation carefully.",
+            "act": "stays alert and ready",
+            "appearance": "",
+            "emotion": "cautious",
+            "ooc": ""
+        }
+
 
 # Singleton instance
 llm_service = LLMService()
