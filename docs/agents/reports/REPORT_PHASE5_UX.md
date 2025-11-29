@@ -1,29 +1,105 @@
 # Phase 5: UI/UX Improvements - Progress Report
 
 **Date:** 2025-11-29
-**Status:** Partial Implementation - Backend Complete
+**Status:** ✅ Complete
 **Task:** P5-4 AI Character Action Generation
 
 ---
 
 ## Executive Summary
 
-Backend implementation for AI character action generation is **complete and functional**. Frontend integration remains **TODO** but has clear implementation path documented below.
+AI character action generation is **fully implemented** across both backend and frontend.
 
-**Completed:**
+**Backend (Commit d92944f):**
 - ✅ LLM Service method for character action generation
 - ✅ Backend API endpoint `/api/v1/ai/generate-action`
 - ✅ Character data extraction and context assembly
 - ✅ AI personality-based prompt engineering
 
-**Remaining:**
-- ⏳ Frontend button UI in SceneActiveTurn.vue
-- ⏳ Frontend warning dialog on submit
-- ⏳ Integration testing with real AI characters
+**Frontend (Commit fc7b3b5):**
+- ✅ AI character indicator (🤖) next to character names
+- ✅ ⋆˙⟡ button for generating AI actions
+- ✅ Loading state with ⏳ and pulse animation
+- ✅ Submit warning for AI characters with empty actions
+- ✅ API integration via `aiAPI.generateAction()`
 
 ---
 
-## Implementation Details
+## Frontend Implementation Details
+
+### 1. API Service Extension
+
+**File:** `frontend/src/services/api.ts`
+
+**Added:**
+```typescript
+export interface GeneratedAction {
+  speak: string
+  act: string
+  appearance: string
+  emotion: string
+}
+
+export const aiAPI = {
+  generateAction: (data: {
+    character_id: string
+    scene_id?: string
+    campaign_id?: string
+    context?: string
+  }) => fetchJSON<GeneratedAction>('/ai/generate-action', { ... })
+}
+```
+
+### 2. SceneActiveTurn.vue Enhancements
+
+**Character Interface Extended:**
+```typescript
+interface Character {
+  id: string
+  name: string
+  ai_controlled?: boolean
+  ai_personality?: string
+}
+```
+
+**Helper Functions:**
+- `isCharacterAI(characterId)` - Checks if character is AI-controlled
+- `generateAIAction(draft)` - Calls API and updates draft fields
+
+**UI Elements:**
+- 🤖 badge next to AI character names
+- ⋆˙⟡ generate button (gold color, only visible for AI characters)
+- ⏳ loading indicator with pulse animation
+- Button disabled while generating
+
+**Submit Warning:**
+- Detects AI characters with empty actions
+- Shows confirmation dialog listing AI character names
+- User can cancel to go back and generate actions
+
+### 3. Styling
+
+```css
+.btn-ai-generate {
+  background: var(--color-background-mute);
+  color: var(--vt-c-gold);
+}
+.btn-ai-generate:hover {
+  background: var(--vt-c-gold);
+  color: var(--vt-c-black);
+}
+.btn-ai-generate.generating {
+  animation: pulse 1s infinite;
+}
+.ai-badge {
+  margin-left: 4px;
+  font-size: 12px;
+}
+```
+
+---
+
+## Backend Implementation Details (Reference)
 
 ### 1. LLM Service Enhancement ✅
 
