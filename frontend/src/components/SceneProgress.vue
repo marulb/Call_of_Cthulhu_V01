@@ -38,9 +38,7 @@
 
         <div v-if="turn.reaction" class="turn-reaction">
           <h4>Keeper's Response:</h4>
-          <div class="reaction-content">
-            <p>{{ turn.reaction.description }}</p>
-          </div>
+          <div class="reaction-content markdown-content" v-html="parseMarkdown(turn.reaction.description || '')"></div>
           <div v-if="turn.reaction.summary" class="reaction-summary">
             <strong>Summary:</strong> {{ turn.reaction.summary }}
           </div>
@@ -64,6 +62,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue'
 import type { Turn } from '@/types/gameplay'
+import { parseMarkdown } from '@/composables/useMarkdown'
 
 interface Character {
   id: string
@@ -349,6 +348,75 @@ function formatStatus(status: string) {
   line-height: 1.6;
   color: var(--color-text);
   white-space: pre-wrap;
+}
+
+/* Markdown content styling */
+.markdown-content {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+.markdown-content :deep(p) {
+  margin: 0 0 0.75em 0;
+}
+
+.markdown-content :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.markdown-content :deep(strong) {
+  font-weight: 600;
+  color: var(--color-heading);
+}
+
+.markdown-content :deep(em) {
+  font-style: italic;
+}
+
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.markdown-content :deep(li) {
+  margin: 0.25em 0;
+}
+
+.markdown-content :deep(h1),
+.markdown-content :deep(h2),
+.markdown-content :deep(h3),
+.markdown-content :deep(h4) {
+  margin: 0.75em 0 0.5em 0;
+  font-weight: 600;
+  color: var(--color-heading);
+}
+
+.markdown-content :deep(h1) { font-size: 1.3em; }
+.markdown-content :deep(h2) { font-size: 1.2em; }
+.markdown-content :deep(h3) { font-size: 1.1em; }
+.markdown-content :deep(h4) { font-size: 1em; }
+
+.markdown-content :deep(blockquote) {
+  margin: 0.5em 0;
+  padding: 0.5em 1em;
+  border-left: 3px solid var(--vt-c-metallic-accent);
+  background: var(--color-background-soft);
+  font-style: italic;
+}
+
+.markdown-content :deep(code) {
+  background: var(--color-background-mute);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.markdown-content :deep(hr) {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 1em 0;
 }
 
 .reaction-summary {

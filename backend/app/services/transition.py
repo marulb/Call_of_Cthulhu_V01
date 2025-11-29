@@ -6,12 +6,13 @@ Implements automated scene/chapter creation logic from REFACTORING_PLAN.md Secti
 """
 import logging
 import uuid
-from typing import Optional, Dict, Any, Literal
+from typing import Optional, Dict, Any, Literal, List
 from pydantic import BaseModel
 from datetime import datetime
 
 from ..database import get_gamerecords_db
 from ..models import Scene, Chapter, Change, Meta
+from .llm import llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -320,16 +321,31 @@ class TransitionService:
         )
 
     async def _close_scene(self, scene_id: str, reason: str):
-        """Mark a scene as completed."""
+        """Mark a scene as completed with LLM-generated summary."""
         db = get_gamerecords_db()
 
-        # Generate summary from scene turns (simplified)
+        # Get scene with its turns
         scene = await db.scenes.find_one({"id": scene_id})
         if not scene:
             return
 
-        turn_count = len(scene.get("turns", []))
-        summary = f"{scene.get('name', 'Scene')} completed. {turn_count} turns. {reason}"
+        scene_name = scene.get("name", "Unnamed Scene")
+        turn_ids = scene.get("turns", [])
+        
+        # Fetch turn documents for summarization
+        turns = []
+        if turn_ids:
+            cursor = db.turns.find({"id": {"$in": turn_ids}}).sort("order", 1)
+            turns = await cursor.to_list(length=100)
+
+        # Generate LLM summary (async, but don't block on failure)
+        try:
+            summary = await llm_service.summarize_scene(scene_name, turns)
+            logger.info(f"Generated LLM summary for scene {scene_id}")
+        except Exception as e:
+            logger.warning(f"LLM summarization failed for scene {scene_id}: {e}")
+            # Fallback to simple summary
+            summary = f"*{scene_name}* completed. {len(turns)} turns. {reason}"
 
         await db.scenes.update_one(
             {"id": scene_id},
@@ -351,16 +367,31 @@ class TransitionService:
         logger.info(f"Closed scene {scene_id}")
 
     async def _close_chapter(self, chapter_id: str, reason: str):
-        """Mark a chapter as completed."""
+        """Mark a chapter as completed with LLM-generated summary."""
         db = get_gamerecords_db()
 
-        # Generate summary from chapter scenes (simplified)
+        # Get chapter with its scenes
         chapter = await db.chapters.find_one({"id": chapter_id})
         if not chapter:
             return
 
-        scene_count = len(chapter.get("scenes", []))
-        summary = f"{chapter.get('name', 'Chapter')} completed. {scene_count} scenes. {reason}"
+        chapter_name = chapter.get("name", "Unnamed Chapter")
+        scene_ids = chapter.get("scenes", [])
+        
+        # Fetch scene documents for summarization
+        scenes = []
+        if scene_ids:
+            cursor = db.scenes.find({"id": {"$in": scene_ids}}).sort("_id", 1)
+            scenes = await cursor.to_list(length=50)
+
+        # Generate LLM summary (async, but don't block on failure)
+        try:
+            summary = await llm_service.summarize_chapter(chapter_name, scenes)
+            logger.info(f"Generated LLM summary for chapter {chapter_id}")
+        except Exception as e:
+            logger.warning(f"LLM summarization failed for chapter {chapter_id}: {e}")
+            # Fallback to simple summary
+            summary = f"**{chapter_name}** completed. {len(scenes)} scenes. {reason}"
 
         await db.chapters.update_one(
             {"id": chapter_id},
