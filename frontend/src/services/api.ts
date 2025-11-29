@@ -304,6 +304,13 @@ export const realmsAPI = {
 
 // ============== CAMPAIGNS ==============
 
+export interface CampaignSetting {
+  tone?: string
+  goal?: string
+  story_elements?: string[]
+  key_elements?: string[]
+}
+
 export const campaignsAPI = {
   list: (realmId?: string) => {
     const query = realmId ? `?realm_id=${realmId}` : ''
@@ -315,6 +322,8 @@ export const campaignsAPI = {
     name: string
     description?: string
     status?: 'planning' | 'running' | 'paused' | 'completed'
+    setting?: CampaignSetting
+    generate_milestones?: boolean
     created_by: string
   }) =>
     fetchJSON<Campaign>('/campaigns', {
