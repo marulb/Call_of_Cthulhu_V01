@@ -8,27 +8,199 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "dm-webhook-001",
+      "id": "f5196efb-7785-4411-890d-35da3759e71d",
       "name": "Webhook - DungeonMaster",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        -1200,
-        400
+        -64,
+        -176
       ],
       "webhookId": "coc-dungeonmaster-webhook"
     },
     {
       "parameters": {
-        "jsCode": "// Parse incoming player actions\nconst body = $json.body || $json;\nconst activeTurn = body.ActiveTurn || [];\nconst sceneId = body.scene_id || null;\nconst sessionId = body.session_id || null;\nconst campaignId = body.campaign_id || null;\nconst turnId = body.turn_id || null;\n\nif (!activeTurn || activeTurn.length === 0) {\n  throw new Error('No player actions provided in ActiveTurn');\n}\n\nif (!sceneId || !sessionId || !campaignId) {\n  throw new Error('Missing required context: scene_id, session_id, campaign_id');\n}\n\n// Extract character IDs from actions\nconst characterIds = activeTurn\n  .map(action => action.character_id)\n  .filter(id => id);\n\nreturn [\n  {\n    json: {\n      player_actions: activeTurn,\n      scene_id: sceneId,\n      session_id: sessionId,\n      campaign_id: campaignId,\n      turn_id: turnId,\n      character_ids: characterIds,\n      iteration_count: 0,\n      max_iterations: 5,\n      collected_data: {\n        player_actions: activeTurn\n      },\n      references: [],\n      skill_checks: []\n    }\n  }\n];"
+        "jsCode": "// Parse incoming player actions\nconst body = $json.body || $json;\nconst activeTurn = body.ActiveTurn || [];\nconst sceneId = body.scene_id || null;\nconst sessionId = body.session_id || null;\nconst campaignId = body.campaign_id || null;\nconst turnId = body.turn_id || null;\n\nif (!activeTurn || activeTurn.length === 0) {\n  throw new Error('No player actions provided in ActiveTurn');\n}\n\nif (!sessionId || !campaignId) {\n  throw new Error('Missing required context: session_id, campaign_id');\n}\n\n// Extract character IDs from actions\nconst characterIds = activeTurn\n  .map(action => action.actor_id || action.character_id)\n  .filter(id => id);\n\nreturn [\n  {\n    json: {\n      player_actions: activeTurn,\n      scene_id: sceneId,\n      session_id: sessionId,\n      campaign_id: campaignId,\n      turn_id: turnId,\n      character_ids: characterIds,\n      needs_scene_creation: sceneId === null,\n      needs_turn_creation: true,\n      iteration_count: 0,\n      max_iterations: 5,\n      collected_data: {\n        player_actions: activeTurn\n      },\n      references: [],\n      skill_checks: []\n    }\n  }\n];"
       },
-      "id": "dm-parse-001",
+      "id": "9f253812-e049-4fae-a50e-099407b9501f",
       "name": "Parse Actions",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1008,
-        400
+        160,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.needs_scene_creation }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "81666bae-1f81-4ced-99cd-ad6ec9355613",
+      "name": "Need Scene Creation?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate IDs for Chapter and Scene\nfunction generateId(prefix) {\n  const randomHex = Math.floor(Math.random() * 0xFFFFFFFF).toString(16).padStart(8, '0');\n  return `${prefix}-${randomHex}`;\n}\n\nconst originalContext = $input.first().json;\nconst campaignId = originalContext.campaign_id;\nconst sessionId = originalContext.session_id;\n\nconst chapterId = generateId('chapter');\nconst sceneId = generateId('scene');\n\nconst timestamp = new Date().toISOString();\n\n// Flatten chapter data for MongoDB insert\nreturn [\n  {\n    json: {\n      // Chapter fields (flat for MongoDB)\n      id: chapterId,\n      kind: 'chapter',\n      campaign_id: campaignId,\n      name: 'Untitled Chapter',\n      order: 1,\n      scenes: [sceneId],\n      summary: 'Chapter in progress',\n      changes: [{ by: 'system', at: timestamp }],\n      // Store scene data and context separately for next node\n      _scene_data: {\n        id: sceneId,\n        kind: 'scene',\n        chapter_id: chapterId,\n        name: 'Untitled Scene',\n        location_id: null,\n        status: 'in_progress',\n        participants: originalContext.character_ids || [],\n        turns: [],\n        summary: 'Scene in progress',\n        description: null,\n        changes: [{ by: 'system', at: timestamp }]\n      },\n      _original_context: originalContext\n    }\n  }\n];"
+      },
+      "id": "ea3728b1-1293-4e34-a4c1-69182cf71033",
+      "name": "Prepare Chapter + Scene",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        -272
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "chapters",
+        "fields": "id,kind,campaign_id,name,order,scenes,summary,changes",
+        "options": {}
+      },
+      "id": "4e20372d-33bf-4991-83d0-1110b894c435",
+      "name": "Create Chapter",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        832,
+        -272
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "KatUu4hcJi0VoYNT",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Restore scene data from previous context\nconst prevData = $input.first().json;\nconst sceneData = prevData._scene_data;\nconst originalContext = prevData._original_context;\n\n// Return flattened scene data for MongoDB insert\nreturn [{\n  json: {\n    ...sceneData,\n    // Preserve context for next nodes\n    _original_context: originalContext\n  }\n}];"
+      },
+      "id": "c3ef3cce-c574-44c1-bcf7-fb4c1bfc429a",
+      "name": "Prepare Scene Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        -272
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "scenes",
+        "fields": "id,kind,chapter_id,name,location_id,status,participants,turns,summary,description,changes",
+        "options": {}
+      },
+      "id": "INSERT_SCENE_MONGO",
+      "name": "Insert Scene to MongoDB",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        -272
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "KatUu4hcJi0VoYNT",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Restore original context after scene creation\nconst prevData = $input.first().json;\nconst originalContext = prevData._original_context;\nconst sceneId = prevData.id;\n\nreturn [{ \n  json: {\n    ...originalContext,\n    scene_id: sceneId\n  }\n}];"
+      },
+      "id": "96b04b8e-ceb7-4db4-af78-bdf5cb1da2a2",
+      "name": "Scene Created",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        -272
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pass through existing scene_id\nreturn [$json];"
+      },
+      "id": "76178675-4491-4740-8a9f-6b3a376d03bc",
+      "name": "Use Existing Scene",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate Turn ID and prepare Turn document\nfunction generateId(prefix) {\n  const randomHex = Math.floor(Math.random() * 0xFFFFFFFF).toString(16).padStart(8, '0');\n  return `${prefix}-${randomHex}`;\n}\n\nconst turnId = generateId('turn');\nconst sceneId = $json.scene_id;\nconst sessionId = $json.session_id;\nconst playerActions = $json.player_actions || [];\n\nconst timestamp = new Date().toISOString();\n\n// Get turn order (could be enhanced to fetch max order from existing turns)\nconst turnOrder = 1;\n\nconst turnDoc = {\n  id: turnId,\n  kind: 'turn',\n  session_id: sessionId,\n  scene_id: sceneId,\n  order: turnOrder,\n  status: 'in_progress',\n  actions: playerActions.map(action => ({\n    actor_id: action.actor_id,\n    controller_owner: action.player_id,\n    speak: action.speak || null,\n    act: action.act || null,\n    appearance: action.appearance || null,\n    emotion: action.emotion || null,\n    ooc: action.ooc || null,\n    meta: {\n      ready: true,\n      resolved: false\n    }\n  })),\n  reaction: null,\n  agent_result: {\n    rules_summary: null,\n    narrative_summary: null\n  },\n  changes: [{ by: 'system', at: timestamp }]\n};\n\nreturn [\n  {\n    json: {\n      turn: turnDoc,\n      turn_id: turnId,\n      // Preserve all context\n      ...$json\n    }\n  }\n];"
+      },
+      "id": "212f5f9f-7dbd-44c0-b725-0399ec3fdace",
+      "name": "Prepare Turn",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "turns",
+        "fields": "={{ JSON.stringify($json.turn) }}",
+        "options": {}
+      },
+      "id": "98f9e154-591d-4c84-aa11-13f2ef94bf20",
+      "name": "Create Turn",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        1952,
+        -176
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "KatUu4hcJi0VoYNT",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pass through with turn_id\nconst context = $input.first().json;\nreturn [{ json: context }];"
+      },
+      "id": "67e9ac54-bc14-480a-ad35-4586c5b9857a",
+      "name": "Turn Created",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2176,
+        -176
       ]
     },
     {
@@ -42,26 +214,26 @@
           "timeout": 60000
         }
       },
-      "id": "dm-skilldetect-001",
+      "id": "f9638011-ecbe-4d99-9d4a-4f7a4b61ae9d",
       "name": "Detect Skill Checks",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -816,
-        400
+        2400,
+        -176
       ]
     },
     {
       "parameters": {
         "jsCode": "// Parse skill checks from LLM response\nconst ollamaResponse = $json.message?.content || $json.response || '{}';\nlet detectedChecks = [];\n\ntry {\n  const parsed = JSON.parse(ollamaResponse);\n  detectedChecks = parsed.skill_checks || [];\n} catch (e) {\n  console.error('Failed to parse skill check detection:', e);\n  detectedChecks = [];\n}\n\n// Carry forward context\nconst previousData = $input.first().json;\n\nreturn [\n  {\n    json: {\n      ...previousData,\n      detected_skill_checks: detectedChecks,\n      has_skill_checks: detectedChecks.length > 0\n    }\n  }\n];"
       },
-      "id": "dm-parseskills-001",
+      "id": "62da2ecb-c665-487d-9c67-2e9ebaf5e13e",
       "name": "Parse Detected Skills",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -624,
-        400
+        2624,
+        -176
       ]
     },
     {
@@ -80,190 +252,227 @@
               }
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "dm-ifskills-001",
+      "id": "9bb0e895-d567-4dbf-91b3-55cd507f7af0",
       "name": "Has Skill Checks?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -432,
-        400
+        2848,
+        -176
       ]
     },
     {
       "parameters": {
         "jsCode": "// Prepare MongoDB query to fetch character data for skill checks\nconst characterIds = $json.character_ids || [];\n\nreturn [\n  {\n    json: {\n      query_type: 'character',\n      filters: characterIds.length > 0 ? { id: { $in: characterIds } } : {}\n    }\n  }\n];"
       },
-      "id": "dm-prepchar-001",
+      "id": "84f110b7-05b7-4b17-9496-1b94592181e7",
       "name": "Prepare Character Fetch",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -240,
-        304
+        3072,
+        -272
       ]
     },
     {
       "parameters": {
-        "workflowId": "={{ 'y55TmujQLP0CCW1G' }}",
+        "workflowId": {
+          "__rl": true,
+          "value": "y55TmujQLP0CCW1G",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/y55TmujQLP0CCW1G",
+          "cachedResultName": "MongoDB Query SubWF"
+        },
         "options": {}
       },
-      "id": "dm-mongochar-001",
+      "id": "308aab45-e6bf-4853-b703-5d797b14cc64",
       "name": "Fetch Characters",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.1,
       "position": [
-        -48,
-        304
+        3296,
+        -272
       ]
     },
     {
       "parameters": {
         "jsCode": "// Match detected skill checks with character data and prepare dice rolls\nconst detectedChecks = $input.first().json.detected_skill_checks || [];\nconst characterData = $json.data || [];\nconst skillCheckResults = [];\n\n// Build character lookup map\nconst charMap = {};\nfor (const char of characterData) {\n  charMap[char.id] = char;\n}\n\n// Process each detected skill check\nfor (const check of detectedChecks) {\n  const character = charMap[check.character_id];\n  \n  if (!character) {\n    console.warn(`Character ${check.character_id} not found`);\n    continue;\n  }\n\n  // Find skill value\n  const skillName = check.skill_name;\n  const skills = character.skills || [];\n  const skill = skills.find(s => \n    s.name.toLowerCase() === skillName.toLowerCase()\n  );\n\n  if (!skill) {\n    console.warn(`Skill ${skillName} not found for ${character.name}`);\n    continue;\n  }\n\n  // Prepare dice roll\n  skillCheckResults.push({\n    roll_type: 'skill_check',\n    skill_name: skillName,\n    skill_value: skill.value || skill.base || 0,\n    character_id: check.character_id,\n    character_name: character.name,\n    difficulty: check.difficulty || 'Regular',\n    bonus_dice: 0,\n    penalty_dice: 0,\n    reason: check.reason\n  });\n}\n\nreturn skillCheckResults.map(check => ({ json: check }));"
       },
-      "id": "dm-matchskills-001",
+      "id": "15277860-71fa-44fe-9f9b-3af1bb38d08c",
       "name": "Match Skills to Characters",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        144,
-        304
+        3520,
+        -272
       ]
     },
     {
       "parameters": {
-        "workflowId": "={{ '6XlcM8xBgOmhxIpM' }}",
+        "workflowId": {
+          "__rl": true,
+          "value": "6XlcM8xBgOmhxIpM",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/6XlcM8xBgOmhxIpM",
+          "cachedResultName": "Dice Roller SubWF"
+        },
         "options": {}
       },
-      "id": "dm-rollskills-001",
+      "id": "7ebf23c9-8625-4010-8a91-00e167aa4398",
       "name": "Roll Skill Checks",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.1,
       "position": [
-        336,
-        304
+        3744,
+        -272
       ]
     },
     {
       "parameters": {
         "jsCode": "// Prepare campaign query\nconst campaignId = $input.first().json.campaign_id;\n\nreturn [\n  {\n    json: {\n      query_type: 'campaign',\n      filters: { id: campaignId }\n    }\n  }\n];"
       },
-      "id": "dm-prepcampaign-001",
+      "id": "eefbcd3a-74b3-43c1-8360-ef996b9e524c",
       "name": "Prepare Campaign Fetch",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -240,
-        496
+        3968,
+        -176
       ]
     },
     {
       "parameters": {
-        "workflowId": "={{ 'y55TmujQLP0CCW1G' }}",
+        "workflowId": {
+          "__rl": true,
+          "value": "y55TmujQLP0CCW1G",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/y55TmujQLP0CCW1G",
+          "cachedResultName": "MongoDB Query SubWF"
+        },
         "options": {}
       },
-      "id": "dm-mongocampaign-001",
+      "id": "96174156-5d9b-483d-ab9d-7e9df52f9baa",
       "name": "Fetch Campaign",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.1,
       "position": [
-        -48,
-        496
+        4192,
+        -176
       ]
     },
     {
       "parameters": {
         "jsCode": "// Prepare scene query\nconst sceneId = $input.first().json.scene_id;\n\nreturn [\n  {\n    json: {\n      query_type: 'scene',\n      filters: { id: sceneId }\n    }\n  }\n];"
       },
-      "id": "dm-prepscene-001",
+      "id": "719fe858-f193-439b-b568-7d8653aa00f0",
       "name": "Prepare Scene Fetch",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        144,
-        496
+        4416,
+        -176
       ]
     },
     {
       "parameters": {
-        "workflowId": "={{ 'y55TmujQLP0CCW1G' }}",
+        "workflowId": {
+          "__rl": true,
+          "value": "y55TmujQLP0CCW1G",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/y55TmujQLP0CCW1G",
+          "cachedResultName": "MongoDB Query SubWF"
+        },
         "options": {}
       },
-      "id": "dm-mongoscene-001",
+      "id": "5f58b872-c2e6-4643-9d18-212bd17b0eaf",
       "name": "Fetch Scene",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.1,
       "position": [
-        336,
-        496
+        4640,
+        -176
       ]
     },
     {
       "parameters": {
         "jsCode": "// Build context query for Qdrant based on player actions\nconst playerActions = $input.first().json.player_actions || [];\n\n// Extract all text from actions\nconst actionTexts = [];\nfor (const action of playerActions) {\n  if (action.speak) actionTexts.push(action.speak);\n  if (action.act) actionTexts.push(action.act);\n  if (action.ooc) actionTexts.push(action.ooc);\n}\n\nconst combinedText = actionTexts.join(' ');\n\nreturn [\n  {\n    json: {\n      query: combinedText,\n      collection: 'Cthulhu_Wiki',\n      limit: 3\n    }\n  }\n];"
       },
-      "id": "dm-prepqdrant-001",
+      "id": "2416813b-eed0-4b41-8afd-c326f01f9387",
       "name": "Prepare Lore Query",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        528,
-        496
+        4864,
+        -176
       ]
     },
     {
       "parameters": {
-        "workflowId": "={{ 'RujcKBHIYtoxE5H4' }}",
+        "workflowId": {
+          "__rl": true,
+          "value": "RujcKBHIYtoxE5H4",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/RujcKBHIYtoxE5H4",
+          "cachedResultName": "Qdrant RAG SubWF"
+        },
         "options": {}
       },
-      "id": "dm-qdrant-001",
+      "id": "d736f71d-6be7-4fa3-bcd5-039813eb1c2c",
       "name": "Fetch Lore",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.1,
       "position": [
-        720,
-        496
+        5088,
+        -176
       ]
     },
     {
       "parameters": {
-        "jsCode": "// Merge all collected data\nconst allItems = $input.all();\nconst firstItem = $input.first().json;\n\nlet collectedData = firstItem.collected_data || {};\nlet references = firstItem.references || [];\nlet skillChecks = [];\n\n// Merge data from all sources\nfor (const item of allItems) {\n  const data = item.json.data;\n  const refs = item.json.references || [];\n  const queryType = item.json.query_type;\n\n  // MongoDB results\n  if (data && queryType) {\n    if (queryType === 'character') {\n      collectedData.characters = data;\n    } else if (queryType === 'campaign') {\n      collectedData.campaign = data[0] || null;\n    } else if (queryType === 'scene') {\n      collectedData.scene = data[0] || null;\n    }\n  }\n\n  // Qdrant chunks\n  if (item.json.chunks) {\n    collectedData.rules_chunks = collectedData.rules_chunks || [];\n    collectedData.rules_chunks.push(...item.json.chunks);\n  }\n\n  // Skill check results\n  if (item.json.roll_type === 'skill_check') {\n    skillChecks.push({\n      character_id: item.json.character_id,\n      character_name: item.json.character_name,\n      skill_name: item.json.skill_name,\n      skill_value: item.json.skill_value,\n      rolled: item.json.rolled,\n      target_value: item.json.target_value,\n      success_level: item.json.success_level,\n      success: item.json.success,\n      formatted: item.json.formatted\n    });\n  }\n\n  // Merge references\n  references.push(...refs);\n}\n\n// Deduplicate references\nreferences = [...new Set(references)];\n\ncollectedData.skill_checks = skillChecks;\n\nreturn [\n  {\n    json: {\n      ...firstItem,\n      collected_data: collectedData,\n      references: references,\n      skill_checks: skillChecks\n    }\n  }\n];"
+        "jsCode": "// Merge all collected data\nconst allItems = $input.all();\n\n// Get original context from Parse Detected Skills node\nconst originalContext = $('Parse Detected Skills').first().json;\n\nlet collectedData = originalContext.collected_data || {};\nlet references = originalContext.references || [];\nlet skillChecks = [];\n\n// Merge data from all sources\nfor (const item of allItems) {\n  const data = item.json.data;\n  const refs = item.json.references || [];\n  const queryType = item.json.query_type;\n\n  // MongoDB results\n  if (data && queryType) {\n    if (queryType === 'character') {\n      collectedData.characters = data;\n    } else if (queryType === 'campaign') {\n      collectedData.campaign = data[0] || null;\n    } else if (queryType === 'scene') {\n      collectedData.scene = data[0] || null;\n    }\n  }\n\n  // Qdrant chunks\n  if (item.json.chunks) {\n    collectedData.rules_chunks = collectedData.rules_chunks || [];\n    collectedData.rules_chunks.push(...item.json.chunks);\n  }\n\n  // Skill check results\n  if (item.json.roll_type === 'skill_check') {\n    skillChecks.push({\n      character_id: item.json.character_id,\n      character_name: item.json.character_name,\n      skill_name: item.json.skill_name,\n      skill_value: item.json.skill_value,\n      rolled: item.json.rolled,\n      target_value: item.json.target_value,\n      success_level: item.json.success_level,\n      success: item.json.success,\n      formatted: item.json.formatted\n    });\n  }\n\n  // Merge references\n  references.push(...refs);\n}\n\n// Deduplicate references\nreferences = [...new Set(references)];\n\ncollectedData.skill_checks = skillChecks;\n\nreturn [\n  {\n    json: {\n      player_actions: originalContext.player_actions,\n      scene_id: originalContext.scene_id,\n      session_id: originalContext.session_id,\n      campaign_id: originalContext.campaign_id,\n      turn_id: originalContext.turn_id,\n      character_ids: originalContext.character_ids,\n      collected_data: collectedData,\n      references: references,\n      skill_checks: skillChecks\n    }\n  }\n];"
       },
-      "id": "dm-merge-001",
+      "id": "91668ad9-da62-4d08-b5d6-8a1a87e3e53a",
       "name": "Merge Collected Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        912,
-        400
+        5312,
+        -176
       ]
     },
     {
       "parameters": {
         "jsCode": "// Prepare LLM Synthesizer input\nconst collectedData = $json.collected_data || {};\nconst references = $json.references || [];\n\nreturn [\n  {\n    json: {\n      agent_type: 'dungeonmaster',\n      collected_data: collectedData,\n      references: references\n    }\n  }\n];"
       },
-      "id": "dm-prepllm-001",
+      "id": "8d6bab6c-f11c-4a56-9926-abce46cbbdd4",
       "name": "Prepare LLM Input",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1104,
-        400
+        5536,
+        -176
       ]
     },
     {
       "parameters": {
-        "workflowId": "={{ 'l0qIOBJbnkSQagfu' }}",
+        "workflowId": {
+          "__rl": true,
+          "value": "l0qIOBJbnkSQagfu",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/l0qIOBJbnkSQagfu",
+          "cachedResultName": "LLM Synthesizer SubWF"
+        },
         "options": {}
       },
-      "id": "dm-llm-001",
+      "id": "f1568215-2f67-4d11-8dea-350fdd94fdf7",
       "name": "Generate Scene Narrative",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.1,
       "position": [
-        1296,
-        400
+        5760,
+        -176
       ]
     },
     {
@@ -277,54 +486,54 @@
           "timeout": 30000
         }
       },
-      "id": "dm-interact-001",
+      "id": "d7eb044a-35ab-43bb-a7e4-86fa1d6af22d",
       "name": "Detect Interaction Needed",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1488,
-        400
+        5984,
+        -176
       ]
     },
     {
       "parameters": {
         "jsCode": "// Parse interaction detection\nconst ollamaResponse = $json.message?.content || $json.response || '{}';\nlet interactionData = {\n  requires_input: false,\n  reason: 'Unknown',\n  interaction_type: 'NONE'\n};\n\ntry {\n  const parsed = JSON.parse(ollamaResponse);\n  interactionData = parsed;\n} catch (e) {\n  console.error('Failed to parse interaction detection:', e);\n}\n\n// Carry forward all context\nconst previousData = $input.first().json;\nconst sceneAnswer = previousData.answer;\n\nreturn [\n  {\n    json: {\n      ...previousData,\n      interaction: interactionData,\n      scene_narrative: sceneAnswer\n    }\n  }\n];"
       },
-      "id": "dm-parseinteract-001",
+      "id": "d92d06bd-b016-4802-8938-2bd551f8b383",
       "name": "Parse Interaction",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1680,
-        400
+        6208,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare MongoDB update data\nconst turnId = $json.turn_id;\nconst sceneNarrative = $json.scene_narrative || '';\nconst skillChecks = $json.skill_checks || [];\nconst interaction = $json.interaction || {};\n\n// Skip write if no turn_id provided\nif (!turnId) {\n  console.warn('No turn_id provided, skipping MongoDB write');\n  return [$json];\n}\n\n// Structure data for MongoDB update\n// The MongoDB node will use updateKey='id' to find the document\n// So we need to provide 'id' field with the turn_id value\nreturn [\n  {\n    json: {\n      id: turnId,\n      reaction: {\n        description: sceneNarrative,\n        skill_checks: skillChecks,\n        requires_input: interaction.requires_input || false,\n        interaction_type: interaction.interaction_type || 'NONE',\n        timestamp: new Date().toISOString()\n      },\n      status: interaction.requires_input ? 'awaiting_player_input' : 'completed',\n      // Preserve original data for Format Response\n      _original: $json\n    }\n  }\n];"
+      },
+      "id": "0d524243-4857-4c80-88f1-f8aefe1b1e8a",
+      "name": "Prepare MongoDB Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6432,
+        -176
       ]
     },
     {
       "parameters": {
         "operation": "update",
         "collection": "turns",
-        "updateKey": "id",
-        "fieldsUi": {
-          "field": [
-            {
-              "fieldName": "reaction",
-              "fieldValue": "={{ JSON.stringify({\n  description: $json.scene_narrative,\n  timestamp: new Date().toISOString(),\n  skill_checks: $json.skill_checks || [],\n  requires_input: $json.interaction?.requires_input || false,\n  interaction_type: $json.interaction?.interaction_type || 'NONE'\n}) }}"
-            },
-            {
-              "fieldName": "status",
-              "fieldValue": "={{ $json.interaction?.requires_input ? 'awaiting_player_input' : 'completed' }}"
-            }
-          ]
-        },
         "options": {}
       },
-      "id": "dm-writeturn-001",
+      "id": "0f789908-23ef-414a-92bf-53194ca4b779",
       "name": "Write Turn Reaction",
       "type": "n8n-nodes-base.mongoDb",
       "typeVersion": 1.2,
       "position": [
-        1872,
-        400
+        6656,
+        -176
       ],
       "credentials": {
         "mongoDb": {
@@ -335,15 +544,28 @@
     },
     {
       "parameters": {
+        "jsCode": "// Restore original data for Format Response\nreturn [\n  {\n    json: $json._original || $json\n  }\n];"
+      },
+      "id": "2d9d67aa-0bf6-4fdd-ac48-bbc19df9ae84",
+      "name": "Restore Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6880,
+        -176
+      ]
+    },
+    {
+      "parameters": {
         "jsCode": "// Format final response\nconst sceneNarrative = $json.scene_narrative || '';\nconst skillChecks = $json.skill_checks || [];\nconst requiresInput = $json.interaction?.requires_input || false;\nconst interactionType = $json.interaction?.interaction_type || 'NONE';\n\n// Build rules_applied array\nconst rulesApplied = [];\n\nfor (const check of skillChecks) {\n  rulesApplied.push({\n    rule_type: 'skill_check',\n    skill_name: check.skill_name,\n    character_name: check.character_name,\n    result: check.success_level,\n    details: check.formatted\n  });\n}\n\nreturn [\n  {\n    json: {\n      output: sceneNarrative,\n      rules_applied: rulesApplied,\n      requires_input: requiresInput,\n      interaction_type: interactionType\n    }\n  }\n];"
       },
-      "id": "dm-format-001",
+      "id": "6fb2e2b7-c5d6-4b46-b9ce-e738d2bb5f7f",
       "name": "Format Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2064,
-        400
+        7104,
+        -176
       ]
     },
     {
@@ -362,26 +584,26 @@
           }
         }
       },
-      "id": "dm-respond-001",
+      "id": "ece3fcaf-b34b-46f1-9083-048498fed691",
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        2256,
-        400
+        7328,
+        -176
       ]
     },
     {
       "parameters": {
         "jsCode": "// No skill checks path - skip directly to campaign/scene fetch\nreturn [$json];"
       },
-      "id": "dm-noskills-001",
+      "id": "f27a71cc-b6cf-4d96-a05a-7dd54ce5192b",
       "name": "No Skill Checks Path",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -240,
-        592
+        3744,
+        -80
       ]
     }
   ],
@@ -399,6 +621,123 @@
       ]
     },
     "Parse Actions": {
+      "main": [
+        [
+          {
+            "node": "Need Scene Creation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Need Scene Creation?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Chapter + Scene",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Use Existing Scene",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Chapter + Scene": {
+      "main": [
+        [
+          {
+            "node": "Create Chapter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Chapter": {
+      "main": [
+        [
+          {
+            "node": "Prepare Scene Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Scene Data": {
+      "main": [
+        [
+          {
+            "node": "Insert Scene to MongoDB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Scene to MongoDB": {
+      "main": [
+        [
+          {
+            "node": "Scene Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scene Created": {
+      "main": [
+        [
+          {
+            "node": "Prepare Turn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Existing Scene": {
+      "main": [
+        [
+          {
+            "node": "Prepare Turn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Turn": {
+      "main": [
+        [
+          {
+            "node": "Create Turn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Turn": {
+      "main": [
+        [
+          {
+            "node": "Turn Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Turn Created": {
       "main": [
         [
           {
@@ -486,7 +825,7 @@
       "main": [
         [
           {
-            "node": "Merge Collected Data",
+            "node": "Prepare Campaign Fetch",
             "type": "main",
             "index": 0
           }
@@ -618,6 +957,17 @@
       "main": [
         [
           {
+            "node": "Prepare MongoDB Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare MongoDB Update": {
+      "main": [
+        [
+          {
             "node": "Write Turn Reaction",
             "type": "main",
             "index": 0
@@ -626,6 +976,17 @@
       ]
     },
     "Write Turn Reaction": {
+      "main": [
+        [
+          {
+            "node": "Restore Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Context": {
       "main": [
         [
           {
@@ -652,10 +1013,10 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "dungeonmaster-main-v1",
+  "versionId": "e4ce1912-94a5-4c78-af44-61e5e2fab057",
   "meta": {
     "instanceId": "00a8bc7dcc0678a45156c17552244c5fb9e78ff325baae937e09d98a3453ca71"
   },
-  "id": "DungeonMasterMainWorkflow",
+  "id": "srx4qGAUL5iXofDs",
   "tags": []
 }

@@ -55,6 +55,7 @@
             <div v-if="containerVisibility.action" class="grid-item action" :style="{ gridArea: 'action', height: areaHeightPx + 'px' }">
           <SceneActiveTurn :drafts="actionDrafts" :characters="sessionStore.selectedCharacters" :all-characters="allRealmCharacters" :players="allPlayers"
             :current-player-id="sessionStore.playerId || ''" :session-id="sessionStore.currentSession?.id || ''"
+            :scene-id="currentScene?.id" :campaign-id="sessionStore.selectedCampaign?.id" :turn-id="undefined"
             @create-draft="handleCreateDraft" @update-draft="handleUpdateDraft" @delete-draft="handleDeleteDraft"
             @reorder-drafts="handleReorderDrafts" @submit-turn="handleSubmitTurn"
             @dungeonmasterResponse="handleDungeonmasterResponse" @close="closeContainer('action')" />

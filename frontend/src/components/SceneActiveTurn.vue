@@ -174,6 +174,9 @@ const props = defineProps<{
   players: Player[]
   currentPlayerId: string
   sessionId: string
+  sceneId?: string
+  campaignId?: string
+  turnId?: string
 }>()
 
 const emit = defineEmits<{
@@ -325,7 +328,13 @@ function submitTurn() {
   fetch(N8N_DUNGEONMASTER_WEBHOOK, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ActiveTurn: actions })
+    body: JSON.stringify({
+      ActiveTurn: actions,
+      session_id: props.sessionId,
+      scene_id: props.sceneId || null,
+      campaign_id: props.campaignId || null,
+      turn_id: props.turnId || null
+    })
   })
     .then((res) => res.json())
     .then((data) => {
