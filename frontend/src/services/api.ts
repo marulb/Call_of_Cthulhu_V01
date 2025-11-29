@@ -418,6 +418,28 @@ export const charactersAPI = {
     })
 }
 
+// ============== AI ==============
+
+export interface GeneratedAction {
+  speak: string
+  act: string
+  appearance: string
+  emotion: string
+}
+
+export const aiAPI = {
+  generateAction: (data: {
+    character_id: string
+    scene_id?: string
+    campaign_id?: string
+    context?: string
+  }) =>
+    fetchJSON<GeneratedAction>('/ai/generate-action', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+}
+
 // ============== SESSIONS ==============
 
 export const sessionsAPI = {

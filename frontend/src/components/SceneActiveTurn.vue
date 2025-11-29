@@ -45,8 +45,19 @@
           <div class="draft-header">
             <div class="draft-character">
               {{ getCharacterName(draft.character_id) }}
+              <span v-if="isCharacterAI(draft.character_id)" class="ai-badge" title="AI-controlled character">🤖</span>
             </div>
             <div class="draft-controls" v-if="draft.player_id === currentPlayerId">
+              <button 
+                v-if="isCharacterAI(draft.character_id) && !draft.ready"
+                @click="generateAIAction(draft)"
+                class="btn-icon btn-ai-generate"
+                :class="{ generating: generatingActionFor === draft.id }"
+                :disabled="generatingActionFor !== null"
+                title="Generate AI action"
+              >
+                {{ generatingActionFor === draft.id ? '⏳' : '⋆˙⟡' }}
+              </button>
               <button 
                 @click="toggleReady(draft)" 
                 class="btn-icon btn-toggle-ready"
@@ -168,10 +179,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { ActionDraft } from '@/types/gameplay'
+import { aiAPI } from '@/services/api'
 
 interface Character {
   id: string
   name: string
+  ai_controlled?: boolean
+  ai_personality?: string
 }
 
 interface Player {
@@ -249,6 +263,46 @@ function getCharacterName(characterId: string) {
 
 function getPlayerName(playerId: string) {
   return props.players.find((p) => p.player_id === playerId)?.player_name || 'Unknown'
+}
+
+function isCharacterAI(characterId: string): boolean {
+  // Check in allCharacters first (full data)
+  if (props.allCharacters) {
+    const found = props.allCharacters.find((c) => c.id === characterId)
+    if (found) return !!found.ai_controlled
+  }
+  // Check in local characters
+  const foundLocal = props.characters.find((c) => c.id === characterId)
+  return !!foundLocal?.ai_controlled
+}
+
+const generatingActionFor = ref<string | null>(null)
+
+async function generateAIAction(draft: ActionDraft) {
+  if (generatingActionFor.value) return
+  
+  generatingActionFor.value = draft.id
+  try {
+    const result = await aiAPI.generateAction({
+      character_id: draft.character_id,
+      scene_id: props.sceneId,
+      campaign_id: props.campaignId
+    })
+    
+    // Update the draft with generated content
+    emit('updateDraft', {
+      ...draft,
+      speak: result.speak || '',
+      act: result.act || '',
+      appearance: result.appearance || '',
+      emotion: result.emotion || ''
+    })
+  } catch (error) {
+    console.error('Failed to generate AI action:', error)
+    alert('Failed to generate AI action. Please try again.')
+  } finally {
+    generatingActionFor.value = null
+  }
 }
 
 function startNewAction() {
@@ -335,6 +389,20 @@ function submitTurn() {
   // all are ready, then submit directly otherwise confirm
   if (!allActionsReady.value && !confirm('Not all players are ready. Do you want to end the turn anyways?')) {
     return
+  }
+  
+  // Check for AI characters with empty actions
+  const aiEmptyActions = props.drafts.filter(draft => {
+    const isAI = isCharacterAI(draft.character_id)
+    const isEmpty = !draft.speak && !draft.act && !draft.appearance && !draft.emotion
+    return isAI && isEmpty
+  })
+  
+  if (aiEmptyActions.length > 0) {
+    const aiNames = aiEmptyActions.map(d => getCharacterName(d.character_id)).join(', ')
+    if (!confirm(`AI characters (${aiNames}) have no actions. Generate actions before submitting?`)) {
+      return
+    }
   }
 
   // Emit event to parent - parent handles API calls
@@ -643,6 +711,36 @@ function submitTurn() {
 .btn-toggle-ready.active {
   background: var(--vt-c-ink-green);
   color: var(--vt-c-white);
+}
+
+.btn-ai-generate {
+  background: var(--color-background-mute);
+  color: var(--vt-c-gold);
+  font-size: 12px;
+}
+
+.btn-ai-generate:hover {
+  background: var(--vt-c-gold);
+  color: var(--vt-c-black);
+}
+
+.btn-ai-generate.generating {
+  animation: pulse 1s infinite;
+}
+
+.btn-ai-generate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.ai-badge {
+  margin-left: 4px;
+  font-size: 12px;
 }
 
 .btn-remove {
