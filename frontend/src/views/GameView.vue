@@ -499,17 +499,67 @@ async function loadGameData() {
         `${API_BASE}/api/v1/chapters?campaign_id=${campaignId}&status=active`
       )
       const chapters = await chaptersRes.json()
+      
+      let chapterId: string | null = null
+      
       if (chapters.length > 0) {
         currentChapter.value = chapters[0].name
+        chapterId = chapters[0].id
+      } else {
+        // Auto-create first chapter for new campaign
+        console.log('No active chapter found, creating first chapter...')
+        const chapterRes = await fetch(`${API_BASE}/api/v1/chapters`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            campaign_id: campaignId,
+            name: 'Chapter 1',
+            order: 1,
+            status: 'active',
+            created_by: sessionStore.playerId
+          })
+        })
+        if (chapterRes.ok) {
+          const newChapter = await chapterRes.json()
+          currentChapter.value = newChapter.name
+          chapterId = newChapter.id
+          console.log('Created chapter:', chapterId)
+        }
+      }
 
-        // Load active scene from chapter
+      // Load active scene from chapter
+      if (chapterId) {
         const scenesRes = await fetch(
-          `${API_BASE}/api/v1/scenes?chapter_id=${chapters[0].id}&status=active`
+          `${API_BASE}/api/v1/scenes?chapter_id=${chapterId}&status=active`
         )
         const scenes = await scenesRes.json()
-        if (scenes.length > 0) {
-          currentScene.value = scenes[0]
+        
+        // Also check for in_progress scenes
+        let activeScenes = scenes.filter((s: any) => s.status === 'active' || s.status === 'in_progress')
+        
+        if (activeScenes.length > 0) {
+          currentScene.value = activeScenes[0]
           await loadTurns()
+        } else {
+          // Auto-create first scene for new chapter
+          console.log('No active scene found, creating opening scene...')
+          const sceneRes = await fetch(`${API_BASE}/api/v1/scenes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chapter_id: chapterId,
+              name: 'Opening Scene',
+              order: 1,
+              status: 'in_progress',
+              participants: sessionStore.selectedCharacters.map(c => c.id),
+              created_by: sessionStore.playerId
+            })
+          })
+          if (sceneRes.ok) {
+            const newScene = await sceneRes.json()
+            currentScene.value = newScene
+            console.log('Created scene:', newScene.id)
+          }
         }
       }
     }
