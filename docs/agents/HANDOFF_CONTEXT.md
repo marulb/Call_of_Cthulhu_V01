@@ -3,16 +3,16 @@
 > **Purpose:** Quick briefing for AI agents to continue work
 > **Last Updated:** 2025-11-29
 > **Last Agent:** Claude Code
-> **Session:** Phase 2 Design Complete - Hybrid Architecture
+> **Session:** Phase 3 Step 1 Complete - Backend Services Created
 > **Word Limit:** ~500 words
 
 ---
 
 ## Active Task
 
-**📋 Current Task:** Phase 3 - Implementation (Ready to Start)
-**Status:** Design complete, ready for implementation
-**Goal:** Implement hybrid architecture as designed in Phase 2
+**📋 Current Task:** Phase 3 Step 2 - Backend Endpoints (Ready to Start)
+**Status:** Step 1 complete, paused for review before Step 2
+**Goal:** Create new async turn submission and callback endpoints
 
 ---
 
@@ -98,7 +98,57 @@ uvicorn main:app --reload --port 8000
 docker-compose up
 ```
 
-## What Was Completed (Phase 2)
+## What Was Completed
+
+### Phase 3 Step 1: Backend Services ✅ (Just Completed)
+
+Created three new backend services in `backend/app/services/`:
+
+1. **context_assembly.py** (487 lines)
+   - `ContextAssemblyService` class with `assemble_context()` method
+   - Pydantic models matching REFACTORING_PLAN.md Section 5 schema
+   - Fetches campaign, chapter, scene, previous turns, characters
+   - Placeholder for Qdrant RAG integration
+   - Size-limited context: max 5 previous turns, 10 characters, 3 lore chunks
+
+2. **skill_check.py** (365 lines)
+   - `SkillCheckService` class with regex-based skill detection
+   - Keyword matching for 30+ Call of Cthulhu 7e skills
+   - CoC 7e dice mechanics: d100 rolls with success levels
+   - Success levels: Critical, Extreme, Hard, Regular, Failure, Fumble
+   - Difficulty detection from action text (Regular, Hard, Extreme)
+
+3. **transition.py** (369 lines)
+   - `TransitionService` class for scene/chapter creation
+   - `parse_transition_from_llm()` - extracts transition from LLM response
+   - `process_transition()` - creates new scenes/chapters
+   - Automated scene closing with summaries
+   - Carries over participants to new scenes
+
+4. **config.py** (58 lines)
+   - Feature flag: `USE_ASYNC_TURN_PROCESSING` (default: False)
+   - Environment-based configuration
+   - Context assembly limits (turns, characters, lore chunks)
+   - Service URLs (n8n webhooks, backend callbacks)
+
+5. **services/__init__.py** (20 lines)
+   - Exports all services and models
+
+**Files Created:**
+- ✅ `backend/app/services/__init__.py`
+- ✅ `backend/app/services/context_assembly.py`
+- ✅ `backend/app/services/skill_check.py`
+- ✅ `backend/app/services/transition.py`
+- ✅ `backend/app/config.py`
+
+**Code Quality:**
+- All services use async/await for MongoDB operations
+- Pydantic models with type hints
+- Comprehensive logging with `logging.getLogger(__name__)`
+- Error handling with meaningful messages
+- Follows existing backend code patterns
+
+---
 
 ### Phase 2A: Analysis ✅
 - Analyzed all 34 nodes in `DungeonMaster_Main.json`
