@@ -192,6 +192,22 @@ export interface Character {
   changes: Array<{ by: string; at: string; type?: string }>
 }
 
+export interface NPC {
+  id: string
+  kind: string
+  campaign_id: string
+  name: string
+  description: string
+  role: string // "ally", "enemy", "neutral", "mysterious"
+  personality: string
+  goals: string[]
+  knowledge: string[]
+  current_location?: string
+  status: string // "active", "dead", "missing", "unknown"
+  meta: { created_by: string; created_at: string }
+  changes: Array<{ by: string; at: string; type?: string }>
+}
+
 export interface Session {
   id: string
   kind: string

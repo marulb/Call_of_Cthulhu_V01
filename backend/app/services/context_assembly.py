@@ -93,6 +93,19 @@ class LoreChunk(BaseModel):
     relevance_score: float = 0.0
 
 
+class NPCContext(BaseModel):
+    """NPC context for LLM."""
+    id: str
+    name: str
+    description: str
+    role: str = "neutral"
+    personality: str = ""
+    goals: List[str] = Field(default_factory=list)
+    knowledge: List[str] = Field(default_factory=list)
+    current_location: Optional[str] = None
+    status: str = "active"
+
+
 class SkillCheckContext(BaseModel):
     """Pre-rolled skill check result for context."""
     character_id: str
@@ -123,6 +136,7 @@ class ContextData(BaseModel):
     scene: Optional[SceneContext] = None
     previous_turns: List[TurnSummary] = Field(default_factory=list)
     characters: List[CharacterContext] = Field(default_factory=list)
+    npcs: List[NPCContext] = Field(default_factory=list)
     lore_context: List[LoreChunk] = Field(default_factory=list)
     skill_checks: List[SkillCheckContext] = Field(default_factory=list)
 
@@ -215,6 +229,7 @@ class ContextAssemblyService:
         scene_ctx = await self._assemble_scene_context(scene)
         previous_turns = await self._fetch_previous_turns(scene_id, turn.get("order", 1))
         characters = await self._fetch_characters(scene.get("participants", []))
+        npcs = await self._fetch_npcs(scene.get("npcs_present", []))
         lore_chunks = await self._fetch_lore_context(turn.get("actions", []))
 
         # Build context bundle
@@ -225,6 +240,7 @@ class ContextAssemblyService:
             scene=scene_ctx,
             previous_turns=previous_turns,
             characters=characters,
+            npcs=npcs,
             lore_context=lore_chunks,
             skill_checks=skill_checks or []
         )
@@ -241,6 +257,7 @@ class ContextAssemblyService:
 
         logger.info(
             f"Context assembled: {len(characters)} characters, "
+            f"{len(npcs)} NPCs, "
             f"{len(previous_turns)} previous turns, "
             f"{len(lore_chunks)} lore chunks, "
             f"{len(skill_checks or [])} skill checks"
@@ -432,6 +449,40 @@ class ContextAssemblyService:
             ))
 
         return characters
+
+    async def _fetch_npcs(
+        self,
+        npc_ids: List[str]
+    ) -> List[NPCContext]:
+        """
+        Fetch NPC data for NPCs present in the scene.
+
+        Returns simplified NPC context for LLM.
+        """
+        if not npc_ids:
+            return []
+
+        db = get_gamerecords_db()
+
+        # Fetch NPCs from entities collection
+        cursor = db.entities.find({"id": {"$in": npc_ids}, "kind": "npc"})
+        npc_docs = await cursor.to_list(length=20)  # Max 20 NPCs per scene
+
+        npcs = []
+        for npc in npc_docs:
+            npcs.append(NPCContext(
+                id=npc.get("id", ""),
+                name=npc.get("name", "Unknown"),
+                description=npc.get("description", ""),
+                role=npc.get("role", "neutral"),
+                personality=npc.get("personality", ""),
+                goals=npc.get("goals", []),
+                knowledge=npc.get("knowledge", []),
+                current_location=npc.get("current_location"),
+                status=npc.get("status", "active")
+            ))
+
+        return npcs
 
     def _parse_int(self, value: Any) -> int:
         """Safely parse integer from various types."""

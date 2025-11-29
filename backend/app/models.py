@@ -272,6 +272,26 @@ class Character(BaseModel):
         use_enum_values = True
 
 
+class NPC(BaseModel):
+    """NPC entity - non-player character managed by Keeper/AI."""
+    id: Optional[str] = None
+    kind: EntityKind = EntityKind.NPC
+    campaign_id: str  # NPCs belong to a campaign
+    name: str
+    description: str
+    role: str = "neutral"  # "ally", "enemy", "neutral", "mysterious"
+    personality: str = ""  # Personality description
+    goals: List[str] = Field(default_factory=list)  # What do they want?
+    knowledge: List[str] = Field(default_factory=list)  # What do they know?
+    current_location: Optional[str] = None  # Where are they now?
+    status: str = "active"  # "active", "dead", "missing", "unknown"
+    meta: Meta
+    changes: List[Change] = Field(default_factory=list)
+
+    class Config:
+        use_enum_values = True
+
+
 # ============== SESSION LAYER MODELS ==============
 
 class Attendance(BaseModel):
@@ -315,6 +335,8 @@ class Scene(BaseModel):
     description: Optional[str] = None
     summary: Optional[str] = None  # AI-generated summary
     turns: List[str] = Field(default_factory=list)  # Turn IDs
+    participants: List[str] = Field(default_factory=list)  # Character IDs in scene
+    npcs_present: List[str] = Field(default_factory=list)  # NPC IDs in scene
     status: str = "active"  # active, completed
     meta: Meta
     changes: List[Change] = Field(default_factory=list)
@@ -433,6 +455,20 @@ class CharacterCreate(BaseModel):
     profile_completed: Optional[bool] = False
     ai_controlled: Optional[bool] = False
     ai_personality: Optional[str] = None
+
+
+class NPCCreate(BaseModel):
+    """Request model for creating an NPC."""
+    campaign_id: str
+    name: str
+    description: str
+    role: Optional[str] = "neutral"
+    personality: Optional[str] = ""
+    goals: Optional[List[str]] = Field(default_factory=list)
+    knowledge: Optional[List[str]] = Field(default_factory=list)
+    current_location: Optional[str] = None
+    status: Optional[str] = "active"
+    created_by: str
 
 
 class SessionCreate(BaseModel):

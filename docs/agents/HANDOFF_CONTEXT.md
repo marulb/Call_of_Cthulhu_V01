@@ -1,17 +1,17 @@
 # Agent Handoff Context
 
 > **Purpose:** Quick briefing for AI agents to continue work
-> **Last Updated:** 2025-11-29 (M6 complete)
+> **Last Updated:** 2025-11-29 (M6 + M7 complete)
 > **Last Agent:** Claude Code
-> **Session:** Phase 4 Milestones M1-M6+M8 COMPLETE
+> **Session:** Phase 4 Milestones M1-M7+M8 COMPLETE
 > **Word Limit:** ~500 words
 
 ---
 
 ## Active Task
 
-**📋 Current Task:** Phase 4 - Remaining: M7, M2-UI (optional)
-**Status:** ✅ M1, M2, M3, M4, M5, M6, M8, M8b COMPLETE | 🟡 M7, M2-UI NOT STARTED
+**📋 Current Task:** Phase 4 - Remaining: M2-UI (optional)
+**Status:** ✅ M1, M2, M3, M4, M5, M6, M7, M8, M8b COMPLETE | 🟡 M2-UI NOT STARTED
 **Document:** `docs/agents/TASK_PHASE4_COMPLETE.md`
 **Commits:**
 - `5476c01` - M1+M3+M8 implementation
@@ -73,18 +73,46 @@
   - Updated TypeScript Character interface
   - Fields only visible when AI controlled is checked
 
+### M7: NPC Agent System ✅
+**Backend Complete | Frontend UI Pending**
+- Added `NPC` model to `models.py` (id, name, description, role, personality, goals, knowledge, location, status)
+- Added `NPCCreate` model for API requests
+- Updated Scene model with `npcs_present: List[str]` field
+- Created `routes_npcs.py` with full CRUD operations:
+  - List/get/create/update/delete NPCs
+  - Add/remove NPCs from scenes
+- Added `NPCContext` to `context_assembly.py`:
+  - Fetches NPCs from scene's `npcs_present` list
+  - Includes in ContextData bundle
+- Updated LLM_Synthesizer_SubWF.json:
+  - Added "NPCS PRESENT IN SCENE" section to user prompt
+  - LLM generates NPC dialogue/actions based on role, personality, goals
+- Frontend TypeScript interface added to `api.ts`
+- Report: `docs/agents/reports/REPORT_PHASE4_M7.md`
+
+**How it works:**
+1. Keeper creates NPCs via API (campaign-scoped)
+2. NPCs are added to scenes when they should appear
+3. During turns, NPCs are included in LLM context
+4. LLM generates NPC actions/dialogue based on personality & goals
+
+**Future:** Frontend UI for NPC management panel and scene controls
+
 ---
 
 ## Known Issues (Remaining Phase 4)
 
 1. ~~Keeper lacks context~~ ✅ FIXED - Now has realm/campaign/chapter/scene/previous turns
-2. **No NPC support** - M7 not started, M6 complete (AI characters working)
+2. ~~No NPC support~~ ✅ FIXED - M7 complete (backend), frontend UI pending
 3. ~~Frontend bugs~~ ✅ FIXED - All three bugs resolved
+4. **M2-UI** - Optional frontend for campaign settings not implemented
 
 ## New Files Created
 
 - `backend/app/services/llm.py` - Direct LLM service for summarization/generation
 - `frontend/src/composables/useMarkdown.ts` - Markdown parser utility
+- `backend/app/routes_npcs.py` - NPC CRUD routes
+- `docs/agents/reports/REPORT_PHASE4_M7.md` - M7 completion report
 
 ---
 
