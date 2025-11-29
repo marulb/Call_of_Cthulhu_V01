@@ -8,13 +8,13 @@
 
 ## Task Summary
 
-| ID | Task | Priority | Status |
-|----|------|----------|--------|
-| P5-1 | Player name case sensitivity feedback | Medium | 🟡 TODO |
-| P5-2 | AI checkbox/dropdown styling in CharacterSheet | Low | 🟡 TODO |
-| P5-3 | Action ready/edit toggle with ✓/✗ buttons | High | 🟡 TODO |
-| P5-4 | AI Character action generation | High | 🟡 TODO |
-| P5-5 | Automatic character creation | - | ⏸️ DEFERRED |
+| ID | Task | Priority | Difficulty | Status |
+|----|------|----------|------------|--------|
+| P5-1 | Player name case sensitivity | Medium | � Easy | ✅ Done |
+| P5-2 | AI checkbox/dropdown styling | Low | � Easy | ✅ Done |
+| P5-3 | Action ready/edit toggle (✓/✗) | High | 🟡 Medium | ✅ Done |
+| P5-4 | AI Character action generation | High | � Complex | �🟡 In Progress (Claude Code) |
+| P5-5 | Automatic character creation | - | 🔴 Complex | ⏸️ DEFERRED |
 
 ---
 
