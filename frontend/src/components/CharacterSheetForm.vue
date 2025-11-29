@@ -88,15 +88,15 @@
               :readonly="readonly"
             />
           </div>
-          <div class="form-field">
-            <label>
+          <div class="form-field ai-control-field">
+            <label class="checkbox-label">
               <input
                 v-model="character.ai_controlled"
                 type="checkbox"
                 :disabled="readonly"
-                style="width: auto; margin-right: 0.5rem;"
+                class="checkbox-input"
               />
-              AI Controlled
+              <span class="checkbox-text">AI Controlled</span>
             </label>
           </div>
           <div class="form-field" v-if="character.ai_controlled">
@@ -104,6 +104,7 @@
             <select
               v-model="character.ai_personality"
               :disabled="readonly"
+              class="select-input"
             >
               <option value="">None</option>
               <option value="cautious">Cautious</option>
@@ -648,6 +649,51 @@ function saveToJSON() {
 
 .form-field input:read-only,
 .form-field textarea:read-only {
+  background: var(--color-background-soft);
+  cursor: not-allowed;
+}
+
+/* AI Control Field Styling */
+.ai-control-field {
+  margin-top: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.checkbox-input {
+  width: 18px !important;
+  height: 18px;
+  margin-right: 8px;
+  cursor: pointer;
+  accent-color: var(--vt-c-ink-green-light);
+}
+
+.checkbox-text {
+  color: var(--color-text);
+}
+
+.select-input {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 14px;
+  background: var(--color-background);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: var(--vt-c-ink-green-light);
+}
+
+.select-input:disabled {
   background: var(--color-background-soft);
   cursor: not-allowed;
 }
