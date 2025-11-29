@@ -3,79 +3,26 @@
     <div class="list-header">
       <h3>Scene - Active Turn</h3>
       <div class="header-actions">
-        <button v-if="!showNewForm" @click="showNewForm = true" class="btn-add">+ New Action</button>
+        <button v-if="!showNewForm" @click="startNewAction" class="btn-add">+ New Action</button>
         <button @click="emit('close')" class="btn-close" title="Close">✕</button>
       </div>
     </div>
 
     <div class="actions-container">
-      <!-- New Action Form -->
-      <div v-if="showNewForm" class="action-form">
+      <!-- New Action Form (simplified - just pick character) -->
+      <div v-if="showNewForm" class="action-form new-action-prompt">
         <div class="form-header">
           <h4>New Action</h4>
-          <button @click="cancelNewAction" class="btn-cancel">✕</button>
+          <button @click="cancelNewAction" class="btn-icon btn-cancel" title="Cancel">✕</button>
         </div>
-
         <div class="form-field">
-          <label>Character</label>
-          <select v-model="newAction.character_id" required>
+          <label>Select Character</label>
+          <select v-model="newAction.character_id" @change="createEmptyAction">
             <option value="">Select character...</option>
             <option v-for="char in characters" :key="char.id" :value="char.id">
               {{ char.name }}
             </option>
           </select>
-        </div>
-
-        <div class="form-field">
-          <label>Speak</label>
-          <textarea
-            v-model="newAction.speak"
-            placeholder="What your character says..."
-            rows="2"
-          ></textarea>
-        </div>
-
-        <div class="form-field">
-          <label>Act</label>
-          <textarea
-            v-model="newAction.act"
-            placeholder="What your character does..."
-            rows="2"
-          ></textarea>
-        </div>
-
-        <div class="form-field">
-          <label>Appearance (optional)</label>
-          <input
-            v-model="newAction.appearance"
-            type="text"
-            placeholder="How they look, body language..."
-          />
-        </div>
-
-        <div class="form-field">
-          <label>Emotion (optional)</label>
-          <input
-            v-model="newAction.emotion"
-            type="text"
-            placeholder="Their emotional state..."
-          />
-        </div>
-
-        <div class="form-field">
-          <label>OOC Note (optional)</label>
-          <textarea
-            v-model="newAction.ooc"
-            placeholder="Out of character notes for the Keeper..."
-            rows="1"
-          ></textarea>
-        </div>
-
-        <div class="form-actions">
-          <button @click="createAction" class="btn-primary" :disabled="!canCreateAction">
-            Create Action
-          </button>
-          <button @click="cancelNewAction" class="btn-secondary">Cancel</button>
         </div>
       </div>
 
@@ -87,9 +34,10 @@
           class="draft-item"
           :class="{
             ready: draft.ready,
+            editing: !draft.ready && draft.player_id === currentPlayerId,
             'is-mine': draft.player_id === currentPlayerId
           }"
-          :draggable="canReorderDrafts && draft.player_id === currentPlayerId"
+          :draggable="canReorderDrafts && draft.player_id === currentPlayerId && draft.ready"
           @dragstart="handleDragStart(index)"
           @dragover.prevent
           @drop="handleDrop(index)"
@@ -98,15 +46,84 @@
             <div class="draft-character">
               {{ getCharacterName(draft.character_id) }}
             </div>
-            <div class="draft-meta">
+            <div class="draft-controls" v-if="draft.player_id === currentPlayerId">
+              <button 
+                @click="toggleReady(draft)" 
+                class="btn-icon btn-toggle-ready"
+                :class="{ active: draft.ready }"
+                :title="draft.ready ? 'Edit action' : 'Mark as ready'"
+              >
+                ✓
+              </button>
+              <button 
+                @click="deleteDraft(draft)" 
+                class="btn-icon btn-remove"
+                title="Remove action"
+              >
+                ✕
+              </button>
+            </div>
+            <div class="draft-meta" v-else>
               <span class="draft-player">{{ getPlayerName(draft.player_id) }}</span>
               <span v-if="draft.ready" class="ready-badge">✓ Ready</span>
             </div>
           </div>
 
-          <div class="draft-content">
+          <!-- Editable content (when not ready and is mine) -->
+          <div v-if="!draft.ready && draft.player_id === currentPlayerId" class="draft-content-editable">
+            <div class="form-field">
+              <label>Speak</label>
+              <textarea
+                :value="draft.speak"
+                @input="updateDraftField(draft, 'speak', ($event.target as HTMLTextAreaElement).value)"
+                placeholder="What your character says..."
+                rows="2"
+              ></textarea>
+            </div>
+            <div class="form-field">
+              <label>Act</label>
+              <textarea
+                :value="draft.act"
+                @input="updateDraftField(draft, 'act', ($event.target as HTMLTextAreaElement).value)"
+                placeholder="What your character does..."
+                rows="2"
+              ></textarea>
+            </div>
+            <div class="form-field-row">
+              <div class="form-field">
+                <label>Appearance</label>
+                <input
+                  :value="draft.appearance"
+                  @input="updateDraftField(draft, 'appearance', ($event.target as HTMLInputElement).value)"
+                  type="text"
+                  placeholder="Body language..."
+                />
+              </div>
+              <div class="form-field">
+                <label>Emotion</label>
+                <input
+                  :value="draft.emotion"
+                  @input="updateDraftField(draft, 'emotion', ($event.target as HTMLInputElement).value)"
+                  type="text"
+                  placeholder="Emotional state..."
+                />
+              </div>
+            </div>
+            <div class="form-field">
+              <label>OOC Note</label>
+              <textarea
+                :value="draft.ooc"
+                @input="updateDraftField(draft, 'ooc', ($event.target as HTMLTextAreaElement).value)"
+                placeholder="Notes for the Keeper..."
+                rows="1"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Read-only content (when ready or not mine) -->
+          <div v-else class="draft-content">
             <div v-if="draft.speak" class="content-section">
-              <strong>Speak:</strong> {{ draft.speak }}
+              <strong>Speak:</strong> "{{ draft.speak }}"
             </div>
             <div v-if="draft.act" class="content-section">
               <strong>Act:</strong> {{ draft.act }}
@@ -120,13 +137,10 @@
             <div v-if="draft.ooc" class="content-section ooc">
               <em>OOC:</em> {{ draft.ooc }}
             </div>
-          </div>
-
-          <div v-if="draft.player_id === currentPlayerId" class="draft-actions">
-            <button @click="toggleReady(draft)" class="btn-ready" :class="{ active: draft.ready }">
-              {{ draft.ready ? 'Unmark Ready' : 'Mark Ready' }}
-            </button>
-            <button @click="deleteDraft(draft)" class="btn-delete">Delete</button>
+            <!-- Show placeholder if no content yet -->
+            <div v-if="!draft.speak && !draft.act && draft.player_id !== currentPlayerId" class="content-section empty">
+              <em>Preparing action...</em>
+            </div>
           </div>
         </div>
 
@@ -200,6 +214,7 @@ const newAction = ref({
 })
 
 const draggedIndex = ref<number | null>(null)
+const updateDebounceTimers = ref<Record<string, ReturnType<typeof setTimeout>>>({})
 
 const sortedDrafts = computed(() => {
   return [...props.drafts].sort((a, b) => a.order - b.order)
@@ -211,10 +226,6 @@ const readyCount = computed(() => {
 
 const allActionsReady = computed(() => {
   return props.drafts.length > 0 && props.drafts.every((d) => d.ready)
-})
-
-const canCreateAction = computed(() => {
-  return newAction.value.character_id && (newAction.value.speak || newAction.value.act)
 })
 
 const canReorderDrafts = computed(() => {
@@ -240,18 +251,22 @@ function getPlayerName(playerId: string) {
   return props.players.find((p) => p.player_id === playerId)?.player_name || 'Unknown'
 }
 
-function createAction() {
-  if (!canCreateAction.value) return
+function startNewAction() {
+  showNewForm.value = true
+}
+
+function createEmptyAction() {
+  if (!newAction.value.character_id) return
 
   emit('createDraft', {
     session_id: props.sessionId,
     player_id: props.currentPlayerId,
     character_id: newAction.value.character_id,
-    speak: newAction.value.speak || undefined,
-    act: newAction.value.act || undefined,
-    appearance: newAction.value.appearance || undefined,
-    emotion: newAction.value.emotion || undefined,
-    ooc: newAction.value.ooc || undefined,
+    speak: '',
+    act: '',
+    appearance: '',
+    emotion: '',
+    ooc: '',
     order: props.drafts.length,
     ready: false
   })
@@ -271,12 +286,25 @@ function cancelNewAction() {
   }
 }
 
+function updateDraftField(draft: ActionDraft, field: keyof ActionDraft, value: string) {
+  // Debounce updates to avoid too many API calls
+  const timerId = `${draft.id}-${field}`
+  if (updateDebounceTimers.value[timerId]) {
+    clearTimeout(updateDebounceTimers.value[timerId])
+  }
+  
+  updateDebounceTimers.value[timerId] = setTimeout(() => {
+    emit('updateDraft', { ...draft, [field]: value })
+    delete updateDebounceTimers.value[timerId]
+  }, 300)
+}
+
 function toggleReady(draft: ActionDraft) {
   emit('updateDraft', { ...draft, ready: !draft.ready })
 }
 
 function deleteDraft(draft: ActionDraft) {
-  if (confirm('Delete this action?')) {
+  if (confirm('Remove this action?')) {
     emit('deleteDraft', draft.id)
   }
 }
@@ -557,12 +585,18 @@ function submitTurn() {
   background: var(--color-background-mute);
 }
 
+.draft-item.editing {
+  border-left-color: var(--vt-c-ink-green-light);
+  background: rgba(84, 138, 113, 0.1);
+}
+
 .draft-item.is-mine {
   border-left-color: var(--vt-c-ink-green-light);
 }
 
 .draft-item.is-mine.ready {
   border-left-color: var(--vt-c-ink-green);
+  background: rgba(84, 138, 113, 0.15);
 }
 
 .draft-header {
@@ -576,6 +610,49 @@ function submitTurn() {
   font-weight: 700;
   color: var(--color-heading);
   font-size: 14px;
+}
+
+.draft-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-toggle-ready {
+  background: var(--color-background-mute);
+  color: var(--vt-c-fog);
+}
+
+.btn-toggle-ready:hover {
+  background: var(--vt-c-ink-green-light);
+  color: var(--vt-c-white);
+}
+
+.btn-toggle-ready.active {
+  background: var(--vt-c-ink-green);
+  color: var(--vt-c-white);
+}
+
+.btn-remove {
+  background: var(--color-background-mute);
+  color: var(--vt-c-fog);
+}
+
+.btn-remove:hover {
+  background: var(--vt-c-metallic-accent);
+  color: var(--vt-c-white);
 }
 
 .draft-meta {
@@ -602,6 +679,49 @@ function submitTurn() {
   margin-bottom: 8px;
 }
 
+.draft-content-editable {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.draft-content-editable .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.draft-content-editable .form-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--vt-c-fog);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.draft-content-editable .form-field input,
+.draft-content-editable .form-field textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 13px;
+  background: var(--color-background);
+  color: var(--color-text);
+  resize: vertical;
+}
+
+.draft-content-editable .form-field input:focus,
+.draft-content-editable .form-field textarea:focus {
+  outline: none;
+  border-color: var(--vt-c-ink-green-light);
+}
+
+.form-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
 .content-section {
   margin-bottom: 6px;
   font-size: 13px;
@@ -621,10 +741,49 @@ function submitTurn() {
   border-left: 2px solid var(--vt-c-metallic-accent);
 }
 
-.draft-actions {
+.content-section.empty {
+  color: var(--vt-c-fog);
+  font-style: italic;
+}
+
+.new-action-prompt {
+  background: var(--color-background-soft);
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.new-action-prompt .form-field {
   display: flex;
-  gap: 8px;
-  margin-top: 8px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.new-action-prompt .form-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.new-action-prompt .form-field select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 14px;
+  background: var(--color-background);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.new-action-prompt .form-field select:focus {
+  outline: none;
+  border-color: var(--vt-c-ink-green-light);
+}
+
+/* Remove old draft-actions since we use btn-icon now */
+.draft-actions {
+  display: none;
 }
 
 .btn-ready {
