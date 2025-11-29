@@ -6,7 +6,7 @@
       </div>
 
       <div v-else class="relationships-list">
-        <div v-for="(rel, index) in relationships" :key="`rel-${index}-${rel.object}-${rel.relation}`" class="relationship-card">
+        <div v-for="(rel, index) in relationships" :key="index" class="relationship-card">
           <div class="relationship-header">
             <input
               :value="rel.object"

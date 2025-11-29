@@ -20,13 +20,19 @@ logger = logging.getLogger(__name__)
 
 # ============== Context Bundle Models ==============
 
+class RealmContext(BaseModel):
+    """Realm context for LLM - provides overall tone/notes."""
+    id: str
+    name: str
+    setting: Optional[Dict[str, Any]] = None  # tone, notes
+
+
 class CampaignContext(BaseModel):
     """Campaign context for LLM."""
     id: str
     name: str
-    setting: Optional[str] = None
-    story_arc: Optional[str] = None
-    themes: List[str] = Field(default_factory=list)
+    setting: Optional[Dict[str, Any]] = None  # Full setting dict: tone, goal, key_elements, etc.
+    story_arc: Optional[Dict[str, Any]] = None  # Full story_arc dict: tagline, chapters, etc.
 
 
 class ChapterContext(BaseModel):
@@ -109,6 +115,7 @@ class CurrentTurnActions(BaseModel):
 
 class ContextData(BaseModel):
     """Complete context data bundle."""
+    realm: Optional[RealmContext] = None
     campaign: Optional[CampaignContext] = None
     chapter: Optional[ChapterContext] = None
     scene: Optional[SceneContext] = None
@@ -193,7 +200,14 @@ class ContextAssemblyService:
         if campaign_id:
             campaign = await db.campaigns.find_one({"id": campaign_id})
 
+        # Fetch realm (for overall tone/setting)
+        realm_id = campaign.get("realm_id") if campaign else None
+        realm = None
+        if realm_id:
+            realm = await db.realms.find_one({"id": realm_id})
+
         # Assemble context components
+        realm_ctx = await self._assemble_realm_context(realm)
         campaign_ctx = await self._assemble_campaign_context(campaign)
         chapter_ctx = await self._assemble_chapter_context(chapter)
         scene_ctx = await self._assemble_scene_context(scene)
@@ -203,6 +217,7 @@ class ContextAssemblyService:
 
         # Build context bundle
         context_data = ContextData(
+            realm=realm_ctx,
             campaign=campaign_ctx,
             chapter=chapter_ctx,
             scene=scene_ctx,
@@ -231,6 +246,20 @@ class ContextAssemblyService:
 
         return bundle
 
+    async def _assemble_realm_context(
+        self,
+        realm: Optional[Dict[str, Any]]
+    ) -> Optional[RealmContext]:
+        """Extract realm context from MongoDB document."""
+        if not realm:
+            return None
+
+        return RealmContext(
+            id=realm.get("id", ""),
+            name=realm.get("name", "Untitled Realm"),
+            setting=realm.get("setting") if isinstance(realm.get("setting"), dict) else None
+        )
+
     async def _assemble_campaign_context(
         self,
         campaign: Optional[Dict[str, Any]]
@@ -242,9 +271,8 @@ class ContextAssemblyService:
         return CampaignContext(
             id=campaign.get("id", ""),
             name=campaign.get("name", "Untitled Campaign"),
-            setting=campaign.get("setting", {}).get("description") if isinstance(campaign.get("setting"), dict) else None,
-            story_arc=campaign.get("story_arc", {}).get("tagline") if isinstance(campaign.get("story_arc"), dict) else None,
-            themes=campaign.get("setting", {}).get("themes", []) if isinstance(campaign.get("setting"), dict) else []
+            setting=campaign.get("setting") if isinstance(campaign.get("setting"), dict) else None,
+            story_arc=campaign.get("story_arc") if isinstance(campaign.get("story_arc"), dict) else None
         )
 
     async def _assemble_chapter_context(

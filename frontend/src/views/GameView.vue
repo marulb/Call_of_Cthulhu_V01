@@ -595,7 +595,7 @@ function closeCharacterSheet() {
   }
 }
 
-async function handleCharacterSheetSubmit(characterData: Partial<Character>) {
+async function handleCharacterSheetSubmit(characterData: Partial<Character>, isAutosave = false) {
   if (!characterData.id) return
 
   try {
@@ -616,8 +616,8 @@ async function handleCharacterSheetSubmit(characterData: Partial<Character>) {
       allRealmCharacters.value[index] = { ...characterData }
     }
 
-    // If profile is now completed, close the modal
-    if (characterData.profile_completed) {
+    // Only close on manual submit (not autosave), and only if profile is completed
+    if (!isAutosave && characterData.profile_completed) {
       closeCharacterSheet()
     }
   } catch (error) {
@@ -637,7 +637,7 @@ watch(editingCharacter, (newChar) => {
 
   // Set new timeout for autosave (debounce 2 seconds)
   autosaveTimeout = setTimeout(async () => {
-    await handleCharacterSheetSubmit(newChar)
+    await handleCharacterSheetSubmit(newChar, true)  // true = isAutosave, don't close sheet
   }, 2000)
 }, { deep: true })
 

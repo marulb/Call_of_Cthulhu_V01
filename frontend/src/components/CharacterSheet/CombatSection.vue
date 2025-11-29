@@ -33,7 +33,7 @@
       <div class="weapons-section">
         <h4>Weapons</h4>
         <div class="weapons-list">
-          <div v-for="(weapon, index) in visibleWeapons" :key="`weapon-${index}-${weapon.name}-${weapon.skill}`" class="weapon-card">
+          <div v-for="(weapon, index) in visibleWeapons" :key="index" class="weapon-card">
             <div class="weapon-header">
               <input
                 :value="weapon.name"

@@ -27,7 +27,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Format context for LLM Synthesizer SubWF\nconst data = $json;\n\nreturn [{\n  json: {\n    agent_type: \"dungeonmaster\",\n    collected_data: {\n      campaign: data.context.campaign,\n      chapter: data.context.chapter,\n      scene: data.context.scene,\n      previous_turns: data.context.previous_turns || [],\n      characters: data.context.characters || [],\n      lore_context: data.context.lore_context || [],\n      skill_checks: data.context.skill_checks || [],\n      player_actions: data.actions\n    },\n    actions: data.actions,\n    references: [],\n    // Preserve for callback\n    _turn_id: data.turn_id,\n    _callback_url: data.callback_url\n  }\n}];"
+        "jsCode": "// Format context for LLM Synthesizer SubWF\nconst data = $json;\n\nreturn [{\n  json: {\n    agent_type: \"dungeonmaster\",\n    collected_data: {\n      realm: data.context.realm,\n      campaign: data.context.campaign,\n      chapter: data.context.chapter,\n      scene: data.context.scene,\n      previous_turns: data.context.previous_turns || [],\n      characters: data.context.characters || [],\n      lore_context: data.context.lore_context || [],\n      skill_checks: data.context.skill_checks || [],\n      player_actions: data.actions\n    },\n    actions: data.actions,\n    references: [],\n    // Preserve for callback\n    _turn_id: data.turn_id,\n    _callback_url: data.callback_url\n  }\n}];"
       },
       "id": "prepare-llm-input-node",
       "name": "Prepare LLM Input",
