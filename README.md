@@ -2,6 +2,15 @@
 
 RPG campaign management system with Vue.js frontend and FastAPI backend.
 
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [`AGENTS.md`](./AGENTS.md) | **AI agent instructions** — read this first |
+| [`docs/architecture/`](./docs/architecture/) | System design, data flow, friction points |
+| [`docs/specifications/`](./docs/specifications/) | UI specs, data model |
+| [`n8n_workflows/README.md`](./n8n_workflows/README.md) | Workflow documentation |
+
 ## Stack
 - Frontend: Vue.js (port 3093)
 - Backend: FastAPI (port 8093)

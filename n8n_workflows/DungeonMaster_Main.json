@@ -96,6 +96,19 @@
     },
     {
       "parameters": {
+        "jsCode": "// Merge chapter result with preserved context\nconst chapterResult = $input.first().json;\nconst originalData = $('Prepare Chapter + Scene').first().json;\n\nreturn [{\n  json: {\n    chapter_id: chapterResult.id || chapterResult._id,\n    _scene_data: originalData._scene_data,\n    _original_context: originalData._original_context\n  }\n}];"
+      },
+      "id": "MERGE_CHAPTER_RESULT",
+      "name": "Merge Chapter Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        -272
+      ]
+    },
+    {
+      "parameters": {
         "jsCode": "// Restore scene data from previous context\nconst prevData = $input.first().json;\nconst sceneData = prevData._scene_data;\nconst originalContext = prevData._original_context;\n\n// Return flattened scene data for MongoDB insert\nreturn [{\n  json: {\n    ...sceneData,\n    // Preserve context for next nodes\n    _original_context: originalContext\n  }\n}];"
       },
       "id": "c3ef3cce-c574-44c1-bcf7-fb4c1bfc429a",
@@ -157,7 +170,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Generate Turn ID and prepare Turn document\nfunction generateId(prefix) {\n  const randomHex = Math.floor(Math.random() * 0xFFFFFFFF).toString(16).padStart(8, '0');\n  return `${prefix}-${randomHex}`;\n}\n\nconst turnId = generateId('turn');\nconst sceneId = $json.scene_id;\nconst sessionId = $json.session_id;\nconst playerActions = $json.player_actions || [];\n\nconst timestamp = new Date().toISOString();\n\n// Get turn order (could be enhanced to fetch max order from existing turns)\nconst turnOrder = 1;\n\nconst turnDoc = {\n  id: turnId,\n  kind: 'turn',\n  session_id: sessionId,\n  scene_id: sceneId,\n  order: turnOrder,\n  status: 'in_progress',\n  actions: playerActions.map(action => ({\n    actor_id: action.actor_id,\n    controller_owner: action.player_id,\n    speak: action.speak || null,\n    act: action.act || null,\n    appearance: action.appearance || null,\n    emotion: action.emotion || null,\n    ooc: action.ooc || null,\n    meta: {\n      ready: true,\n      resolved: false\n    }\n  })),\n  reaction: null,\n  agent_result: {\n    rules_summary: null,\n    narrative_summary: null\n  },\n  changes: [{ by: 'system', at: timestamp }]\n};\n\nreturn [\n  {\n    json: {\n      turn: turnDoc,\n      turn_id: turnId,\n      // Preserve all context\n      ...$json\n    }\n  }\n];"
+        "jsCode": "// Generate Turn ID and prepare Turn document (FLATTENED for MongoDB)\nfunction generateId(prefix) {\n  const randomHex = Math.floor(Math.random() * 0xFFFFFFFF).toString(16).padStart(8, '0');\n  return `${prefix}-${randomHex}`;\n}\n\nconst originalContext = $json;\nconst turnId = generateId('turn');\nconst sceneId = $json.scene_id;\nconst sessionId = $json.session_id;\nconst playerActions = $json.player_actions || [];\nconst timestamp = new Date().toISOString();\nconst turnOrder = 1;\n\n// Return FLAT structure for MongoDB insert\nreturn [\n  {\n    json: {\n      // Turn fields at root level (for MongoDB)\n      id: turnId,\n      kind: 'turn',\n      session_id: sessionId,\n      scene_id: sceneId,\n      order: turnOrder,\n      status: 'in_progress',\n      actions: playerActions.map(action => ({\n        actor_id: action.actor_id,\n        controller_owner: action.player_id,\n        speak: action.speak || null,\n        act: action.act || null,\n        appearance: action.appearance || null,\n        emotion: action.emotion || null,\n        ooc: action.ooc || null,\n        meta: {\n          ready: true,\n          resolved: false\n        }\n      })),\n      reaction: null,\n      agent_result: {\n        rules_summary: null,\n        narrative_summary: null\n      },\n      changes: [{ by: 'system', at: timestamp }],\n      // Preserve original context for restoration after MongoDB insert\n      _original_context: originalContext\n    }\n  }\n];"
       },
       "id": "212f5f9f-7dbd-44c0-b725-0399ec3fdace",
       "name": "Prepare Turn",
@@ -172,7 +185,7 @@
       "parameters": {
         "operation": "insert",
         "collection": "turns",
-        "fields": "={{ JSON.stringify($json.turn) }}",
+        "fields": "id,kind,session_id,scene_id,order,status,actions,reaction,agent_result,changes",
         "options": {}
       },
       "id": "98f9e154-591d-4c84-aa11-13f2ef94bf20",
@@ -192,7 +205,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Pass through with turn_id\nconst context = $input.first().json;\nreturn [{ json: context }];"
+        "jsCode": "// Restore original context after turn creation\nconst turnResult = $input.first().json;\nconst originalContext = $('Prepare Turn').first().json._original_context;\n\nreturn [{ \n  json: {\n    ...originalContext,\n    turn_id: turnResult.id || turnResult._id\n  }\n}];"
       },
       "id": "67e9ac54-bc14-480a-ad35-4586c5b9857a",
       "name": "Turn Created",
@@ -444,7 +457,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Prepare LLM Synthesizer input\nconst collectedData = $json.collected_data || {};\nconst references = $json.references || [];\n\nreturn [\n  {\n    json: {\n      agent_type: 'dungeonmaster',\n      collected_data: collectedData,\n      references: references\n    }\n  }\n];"
+        "jsCode": "// Prepare LLM Synthesizer input (preserve context for later)\nconst originalContext = $json;\nconst collectedData = $json.collected_data || {};\nconst references = $json.references || [];\n\nreturn [\n  {\n    json: {\n      agent_type: 'dungeonmaster',\n      collected_data: collectedData,\n      references: references,\n      // Preserve original context for restoration after LLM call\n      _original_context: originalContext\n    }\n  }\n];"
       },
       "id": "8d6bab6c-f11c-4a56-9926-abce46cbbdd4",
       "name": "Prepare LLM Input",
@@ -470,6 +483,19 @@
       "name": "Generate Scene Narrative",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.1,
+      "position": [
+        5760,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Restore context after LLM generation\nconst llmResult = $input.first().json;\nconst originalContext = $('Prepare LLM Input').first().json._original_context;\n\nreturn [{\n  json: {\n    ...originalContext,\n    answer: llmResult.answer || llmResult.output || '',\n    llm_metadata: llmResult.metadata || null\n  }\n}];"
+      },
+      "id": "RESTORE_AFTER_LLM",
+      "name": "Restore After LLM",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         5760,
         -176
@@ -661,6 +687,17 @@
       ]
     },
     "Create Chapter": {
+      "main": [
+        [
+          {
+            "node": "Merge Chapter Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Chapter Result": {
       "main": [
         [
           {
@@ -932,6 +969,17 @@
       ]
     },
     "Generate Scene Narrative": {
+      "main": [
+        [
+          {
+            "node": "Restore After LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After LLM": {
       "main": [
         [
           {
