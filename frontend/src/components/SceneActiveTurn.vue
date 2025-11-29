@@ -45,7 +45,7 @@
           <div class="draft-header">
             <div class="draft-character">
               {{ getCharacterName(draft.character_id) }}
-              <span v-if="isCharacterAI(draft.character_id)" class="ai-badge" title="AI-controlled character">🤖</span>
+              <span v-if="isCharacterAI(draft.character_id)" class="ai-badge" title="AI-controlled character">✦</span>
             </div>
             <div class="draft-controls" v-if="draft.player_id === currentPlayerId">
               <button 
@@ -281,12 +281,17 @@ const generatingActionFor = ref<string | null>(null)
 async function generateAIAction(draft: ActionDraft) {
   if (generatingActionFor.value) return
   
+  if (!props.sceneId || !props.sessionId) {
+    alert('Scene or session not available. Please try again.')
+    return
+  }
+  
   generatingActionFor.value = draft.id
   try {
     const result = await aiAPI.generateAction({
       character_id: draft.character_id,
       scene_id: props.sceneId,
-      campaign_id: props.campaignId
+      session_id: props.sessionId
     })
     
     // Update the draft with generated content
@@ -740,7 +745,9 @@ function submitTurn() {
 
 .ai-badge {
   margin-left: 4px;
-  font-size: 12px;
+  font-size: 10px;
+  opacity: 0.5;
+  color: inherit;
 }
 
 .btn-remove {

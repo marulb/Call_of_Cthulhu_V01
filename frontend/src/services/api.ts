@@ -186,7 +186,7 @@ export interface Character {
   ooc_notes: string
   profile_completed: boolean
   ai_controlled: boolean
-  ai_personality?: string | null
+  ai_personality?: string
   meta: { created_by: string; created_at: string }
   visibility?: string
   changes: Array<{ by: string; at: string; type?: string }>
@@ -389,6 +389,8 @@ export const charactersAPI = {
     data?: CharacterSheet
     ooc_notes?: string
     profile_completed?: boolean
+    ai_controlled?: boolean
+    ai_personality?: string
   }) =>
     fetchJSON<Character>('/characters', {
       method: 'POST',
@@ -406,6 +408,8 @@ export const charactersAPI = {
       data?: CharacterSheet
       ooc_notes?: string
       profile_completed?: boolean
+      ai_controlled?: boolean
+      ai_personality?: string
     }
   ) =>
     fetchJSON<Character>(`/characters/${id}`, {
@@ -430,9 +434,9 @@ export interface GeneratedAction {
 export const aiAPI = {
   generateAction: (data: {
     character_id: string
-    scene_id?: string
-    campaign_id?: string
-    context?: string
+    scene_id: string
+    session_id: string
+    existing_actions?: any[]
   }) =>
     fetchJSON<GeneratedAction>('/ai/generate-action', {
       method: 'POST',

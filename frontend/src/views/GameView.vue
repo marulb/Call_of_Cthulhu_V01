@@ -163,6 +163,7 @@ function toggleContainerVisibility(containerId: string) {
           },
           ooc_notes: '',
           profile_completed: false,
+          ai_controlled: false,
           meta: {
             created_by: sessionStore.playerName || '',
             created_at: new Date().toISOString()
@@ -607,7 +608,9 @@ async function handleCharacterSheetSubmit(characterData: Partial<Character>, isA
       created_by: sessionStore.playerName,
       data: characterData.data,
       ooc_notes: characterData.ooc_notes,
-      profile_completed: characterData.profile_completed
+      profile_completed: characterData.profile_completed,
+      ai_controlled: characterData.ai_controlled,
+      ai_personality: characterData.ai_personality || undefined
     })
 
     // Update local character in allRealmCharacters

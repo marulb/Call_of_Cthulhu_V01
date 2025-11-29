@@ -102,7 +102,9 @@ async function handleCreateCharacter(characterData: Partial<Character>) {
       created_by: sessionStore.playerName,
       data: characterData.data,
       ooc_notes: characterData.ooc_notes,
-      profile_completed: characterData.profile_completed
+      profile_completed: characterData.profile_completed,
+      ai_controlled: characterData.ai_controlled,
+      ai_personality: characterData.ai_personality || undefined
     })
     characters.value.push(createdCharacter)
     sessionStore.toggleCharacter(createdCharacter)
