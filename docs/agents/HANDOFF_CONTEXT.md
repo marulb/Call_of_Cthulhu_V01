@@ -1,23 +1,26 @@
 # Agent Handoff Context
 
 > **Purpose:** Quick briefing for AI agents to continue work
-> **Last Updated:** 2025-11-29 18:30 UTC
+> **Last Updated:** 2025-11-29 19:25 UTC
 > **Last Agent:** GitHub Copilot
-> **Session:** Phase 4 Milestones M1+M3+M8 COMPLETE
+> **Session:** Phase 4 Milestones M1-M5+M8 COMPLETE
 > **Word Limit:** ~500 words
 
 ---
 
 ## Active Task
 
-**📋 Current Task:** Phase 4 - Continue with remaining milestones
-**Status:** ✅ M1, M3, M8 COMPLETE | 🟡 M2, M4-M7 NOT STARTED
+**📋 Current Task:** Phase 4 - Remaining: M6, M7
+**Status:** ✅ M1, M2, M3, M4, M5, M8, M8b COMPLETE | 🟡 M6, M7 NOT STARTED
 **Document:** `docs/agents/TASK_PHASE4_COMPLETE.md`
-**Commit:** `5476c01` - M1+M3+M8 implementation
+**Commits:**
+- `5476c01` - M1+M3+M8 implementation
+- `16481fa` - M4+M5+M8b (LLM summarization + markdown)
+- `396854c` - M2 (Campaign milestones)
 
 ---
 
-## Completed This Session (M1+M3+M8)
+## Completed This Session
 
 ### M1: Realm/Campaign Settings ✅
 - Added `RealmContext` to `context_assembly.py` with `setting.tone`, `setting.notes`
@@ -25,23 +28,48 @@
 - `DungeonMaster_Main.json` updated to include realm in `collected_data`
 - `LLM_Synthesizer_SubWF.json` prompt now has REALM CONTEXT, CHAPTER CONTEXT, CURRENT SCENE sections
 
+### M2: Campaign Milestones ✅
+- Extended `CampaignCreate` model with `setting` dict and `generate_milestones` flag
+- Added `milestones: List[str]` to `StoryArc` model
+- Campaign creation route generates milestones via `LLMService` when requested
+- Uses campaign tone, goal, story_elements for contextual milestone generation
+
 ### M3: Keeper Context Window ✅
 - Previous turns already included in context (was done in Phase 3)
 - Scene summary, chapter summary passed to LLM prompt
 - Enhanced prompt building with full narrative hierarchy
+
+### M4: Scene Summarization ✅
+- Created `backend/app/services/llm.py` - Direct Ollama LLM service
+- `summarize_scene()` generates markdown summary from turn history
+- Called by transition service when scene closes
+
+### M5: Chapter Summarization ✅
+- `summarize_chapter()` generates markdown summary from scene summaries
+- Called by transition service when chapter closes
 
 ### M8: Frontend Bug Fixes ✅
 - **CharacterSheet close bug:** Autosave no longer triggers close (added `isAutosave` param)
 - **CombatSection collapse:** Fixed v-for key that included `weapon.name` (caused re-render on type)
 - **RelationshipsSection collapse:** Fixed v-for key that included `rel.object`
 
+### M8b: Markdown Rendering ✅
+- Installed `marked` package in frontend
+- Created `frontend/src/composables/useMarkdown.ts` with XSS sanitization
+- `SceneProgress.vue` renders narrative with v-html
+
 ---
 
 ## Known Issues (Remaining Phase 4)
 
 1. ~~Keeper lacks context~~ ✅ FIXED - Now has realm/campaign/chapter/scene/previous turns
-2. **No NPC support** - M7 not started
+2. **No NPC support** - M6, M7 not started (Claude Code recommended)
 3. ~~Frontend bugs~~ ✅ FIXED - All three bugs resolved
+
+## New Files Created
+
+- `backend/app/services/llm.py` - Direct LLM service for summarization/generation
+- `frontend/src/composables/useMarkdown.ts` - Markdown parser utility
 
 ---
 
