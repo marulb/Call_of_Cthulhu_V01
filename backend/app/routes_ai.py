@@ -411,8 +411,8 @@ async def generate_ai_character_action(request: GenerateActionRequest):
 
     db = get_gamerecords_db()
 
-    # Fetch character
-    character = await db.entities.find_one({"id": request.character_id, "kind": "character"})
+    # Fetch character (kind can be "pc" or "character")
+    character = await db.entities.find_one({"id": request.character_id, "kind": {"$in": ["pc", "character"]}})
     if not character:
         raise HTTPException(status_code=404, detail=f"Character {request.character_id} not found")
 
@@ -426,7 +426,7 @@ async def generate_ai_character_action(request: GenerateActionRequest):
         )
 
     # Fetch scene
-    scene = await db.entities.find_one({"id": request.scene_id, "kind": "scene"})
+    scene = await db.scenes.find_one({"id": request.scene_id})
     if not scene:
         raise HTTPException(status_code=404, detail=f"Scene {request.scene_id} not found")
 
