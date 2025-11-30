@@ -51,6 +51,8 @@ class SceneContext(BaseModel):
     summary: Optional[str] = None
     status: str = "active"
     participants: List[str] = Field(default_factory=list)
+    turn_count: int = 0  # Number of completed turns in this scene
+    pacing_phase: str = "establishment"  # establishment, unease, investigation, revelation, resolution
 
 
 class TurnSummary(BaseModel):
@@ -321,14 +323,55 @@ class ContextAssemblyService:
         if not scene:
             return None
 
+        # Count completed turns in this scene
+        scene_id = scene.get("id", "")
+        turn_count = await self._count_scene_turns(scene_id)
+        pacing_phase = self._determine_pacing_phase(turn_count)
+
         return SceneContext(
-            id=scene.get("id", ""),
+            id=scene_id,
             name=scene.get("name", "Untitled Scene"),
             location=scene.get("description"),  # Using description as location
             summary=scene.get("summary"),
             status=scene.get("status", "active"),
-            participants=scene.get("participants", [])
+            participants=scene.get("participants", []),
+            turn_count=turn_count,
+            pacing_phase=pacing_phase
         )
+
+    async def _count_scene_turns(self, scene_id: str) -> int:
+        """Count completed turns in a scene."""
+        if not scene_id:
+            return 0
+        
+        db = get_gamerecords_db()
+        count = await db.turns.count_documents({
+            "scene_id": scene_id,
+            "status": "completed"
+        })
+        return count
+
+    def _determine_pacing_phase(self, turn_count: int) -> str:
+        """
+        Determine pacing phase based on turn count.
+        
+        Phases (from DUNGEONMASTER_AGENT.md):
+        - establishment: turns 1-5 (mundane, introductions)
+        - unease: turns 6-15 (subtle wrongness, hints)
+        - investigation: turns 16-35 (clues, stakes)
+        - revelation: turns 36-45 (horror manifests)
+        - resolution: turns 46+ (consequences)
+        """
+        if turn_count <= 5:
+            return "establishment"
+        elif turn_count <= 15:
+            return "unease"
+        elif turn_count <= 35:
+            return "investigation"
+        elif turn_count <= 45:
+            return "revelation"
+        else:
+            return "resolution"
 
     async def _fetch_previous_turns(
         self,
