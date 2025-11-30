@@ -79,6 +79,10 @@ class CharacterContext(BaseModel):
     name: str
     occupation: Optional[str] = None
     age: Optional[str] = None
+    pronoun: Optional[str] = None
+    birthplace: Optional[str] = None
+    residence: Optional[str] = None
+    backstory: Optional[str] = None  # Summarized backstory for DM context
     skills: List[CharacterSkill] = Field(default_factory=list)
     stats: Optional[CharacterStats] = None
     conditions: List[str] = Field(default_factory=list)
@@ -370,7 +374,7 @@ class ContextAssemblyService:
         """
         Fetch character data for participants in the scene.
 
-        Extracts relevant skills and stats for LLM context.
+        Extracts relevant skills, stats, and background info for LLM context.
         """
         if not character_ids:
             return []
@@ -380,7 +384,8 @@ class ContextAssemblyService:
         # Limit to max characters
         limited_ids = character_ids[:self.max_characters]
 
-        cursor = db.characters.find({"id": {"$in": limited_ids}})
+        # Query entities collection for player characters (kind: "pc")
+        cursor = db.entities.find({"id": {"$in": limited_ids}, "kind": "pc"})
         char_docs = await cursor.to_list(length=self.max_characters)
 
         characters = []
@@ -436,11 +441,19 @@ class ContextAssemblyService:
             if status.get("dying"):
                 conditions.append("Dying")
 
+            # Extract background info for DM context
+            backstory_data = char_data.get("story", {}).get("backstory", {})
+            backstory_summary = self._summarize_backstory(backstory_data)
+
             characters.append(CharacterContext(
                 id=char.get("id", ""),
                 name=char.get("name", "Unknown"),
                 occupation=investigator.get("occupation") if isinstance(investigator, dict) else None,
                 age=investigator.get("age") if isinstance(investigator, dict) else None,
+                pronoun=investigator.get("pronoun") if isinstance(investigator, dict) else None,
+                birthplace=investigator.get("birthplace") if isinstance(investigator, dict) else None,
+                residence=investigator.get("residence") if isinstance(investigator, dict) else None,
+                backstory=backstory_summary,
                 skills=skills,
                 stats=stats,
                 conditions=conditions,
@@ -449,6 +462,35 @@ class ContextAssemblyService:
             ))
 
         return characters
+
+    def _summarize_backstory(self, backstory: Dict[str, Any]) -> Optional[str]:
+        """
+        Summarize character backstory for DM context.
+        
+        Combines key backstory fields into a concise summary (max 300 chars).
+        """
+        if not backstory:
+            return None
+        
+        parts = []
+        
+        # Personal description - most relevant
+        if backstory.get("personal_description"):
+            parts.append(backstory["personal_description"][:100])
+        
+        # Traits - personality characteristics
+        if backstory.get("traits"):
+            parts.append(f"Traits: {backstory['traits'][:80]}")
+        
+        # Ideology - motivations
+        if backstory.get("ideology_beliefs"):
+            parts.append(f"Beliefs: {backstory['ideology_beliefs'][:80]}")
+        
+        if not parts:
+            return None
+        
+        summary = " | ".join(parts)
+        return summary[:300] if summary else None
 
     async def _fetch_npcs(
         self,
