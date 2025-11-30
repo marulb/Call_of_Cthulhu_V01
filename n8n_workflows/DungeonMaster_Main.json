@@ -1,5 +1,11 @@
 {
+  "updatedAt": "2025-11-29T23:57:24.000Z",
+  "createdAt": "2025-11-29T00:15:34.971Z",
+  "id": "srx4qGAUL5iXofDs",
   "name": "DungeonMaster Main v2",
+  "description": null,
+  "active": true,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -27,7 +33,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        200,
+        208,
         0
       ]
     },
@@ -46,7 +52,13 @@
     },
     {
       "parameters": {
-        "workflowId": "={{ \"LLM Synthesizer SubWF\" }}",
+        "workflowId": {
+          "__rl": true,
+          "value": "l0qIOBJbnkSQagfu",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/l0qIOBJbnkSQagfu",
+          "cachedResultName": "LLM Synthesizer SubWF"
+        },
         "options": {}
       },
       "id": "call-llm-synthesizer-node",
@@ -54,7 +66,7 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.1,
       "position": [
-        600,
+        608,
         0
       ]
     },
@@ -87,12 +99,11 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1000,
+        1008,
         0
       ]
     }
   ],
-  "pinData": {},
   "connections": {
     "Webhook - Receive Context Bundle": {
       "main": [
@@ -150,14 +161,162 @@
       ]
     }
   },
-  "active": false,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
-  "versionId": "new-version-v2",
-  "meta": {
-    "instanceId": "simplified-dungeonmaster-workflow"
+  "staticData": null,
+  "meta": null,
+  "pinData": {
+    "Webhook - Receive Context Bundle": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n:5678",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "connection": "keep-alive",
+            "user-agent": "python-httpx/0.28.1",
+            "content-type": "application/json",
+            "content-length": "5232"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "turn_id": "turn-bbb57089",
+            "callback_url": "http://backend:8000/api/v1/turns/internal/turn-bbb57089/complete",
+            "timestamp": "2025-11-29T23:56:20.272076",
+            "context": {
+              "realm": {
+                "id": "realm-9b4d7461",
+                "name": "Urope",
+                "setting": null
+              },
+              "campaign": {
+                "id": "campaign-78ba31d9",
+                "name": "Wurmdal Castle",
+                "setting": {
+                  "tone": "action thriller",
+                  "goal": "unravel the mysteries of Wurmdal Caslte",
+                  "story_elements": [
+                    "artifacts (at least 3; with weak mystic powers)",
+                    "encounter with beast",
+                    "possible encounter with mythos monster at the end",
+                    "at least 3 different cities visited"
+                  ]
+                },
+                "story_arc": {
+                  "tagline": "unravel the mysteries of Wurmdal Caslte",
+                  "chapters": [],
+                  "milestones": [
+                    "**Arrival in the Wurmdal Region** – The investigators land in the coastal city of **Ravenport**, where rumors of a dormant artifact hidden in the nearby ruins spark their interest.",
+                    "**Collecting the First Artifact** – In the underground catacombs of **Oldenford**, the team retrieves the **Glowing Compass**, a weakly enchanted relic that points toward the next hidden object.",
+                    "**Confronting the Beast of the Swamp** – While traversing the marshes between Oldenford and the mountain town of **Eldershade**, they are ambushed by a massive, mutated marsh beast that guards the second artifact, the **Sapphire Sigil**.",
+                    "**Decoding the Third Artifact in a Distant City** – The investigators travel to the bustling trade hub of **Brighthelm**, where they uncover the **Ethereal Quill**—a parchment that reveals the castle’s true purpose and the location of the final key to Wurmdal Castle.",
+                    "**Final Showdown at Wurmdal Castle** – Armed with all three artifacts, the party infiltrates the castle’s citadel, only to be confronted by a lurking mythos monster that has been sowing the castle’s hidden horrors; their survival hinges on using the artifacts’ combined mystic powers to seal the beast forever."
+                  ]
+                }
+              },
+              "chapter": {
+                "id": "chapter-d1740ea4",
+                "name": "Chapter 1",
+                "summary": null,
+                "order": null
+              },
+              "scene": {
+                "id": "scene-b5a4ab76",
+                "name": "Opening Scene",
+                "location": null,
+                "summary": null,
+                "status": "active",
+                "participants": []
+              },
+              "previous_turns": [
+                {
+                  "order": 1,
+                  "actions": [
+                    {
+                      "actor_id": "char-e22ec4fa",
+                      "controller_owner": "player-7336c490",
+                      "speak": null,
+                      "act": "Sitting at a cafe at the university of Vienna, sipping hot chocolate and browsing through the Feuilleton ",
+                      "appearance": "relaxed",
+                      "emotion": "happy",
+                      "ooc": null,
+                      "meta": {}
+                    },
+                    {
+                      "actor_id": "char-d964fb07",
+                      "controller_owner": "player-7336c490",
+                      "speak": "Hmm, where's everyone? This place feels oddly staged.",
+                      "act": "I make my way to the center of the room, eyes scanning every corner for any inconsistencies.",
+                      "appearance": "Dressed in my usual student jacket and jeans, a notebook tucked under my arm.",
+                      "emotion": "skeptical",
+                      "ooc": "",
+                      "meta": {}
+                    }
+                  ],
+                  "reaction": {
+                    "description": "The café, tucked between the stone arches of the University of Vienna, exudes a weary charm. A low hum of conversation drifts over the clink of porcelain, while the scent of roasted coffee beans mingles with a faint, almost metallic tang that lingers in the air like a forgotten memory. Warm amber light spills from mismatched lamps, casting long, wavering shadows across the worn wooden tables, and the flicker of a single candle on each surface adds a subtle, almost imperceptible pulse to the room’s rhythm.\n\nThe students, wrapped in their jackets and jeans, sip hot chocolate and leaf through the Feuilleton, their faces illuminated by the soft glow. One of them, notebook tucked under the arm, pauses and looks around, eyes flicking from corner to corner. The air seems to hold its breath for a moment, as if the building itself is listening. In the farthest corner, a faint, almost translucent pattern of light and shadow appears on the wall—an impossible, spiraling geometry that shifts ever so slightly when the eye lingers, as if the very fabric of the room is being stretched by something unseen.\n\nA sudden chill brushes the back of the necks, and a low, resonant hum—like distant bells or the faint thrum of a heart—rises from the floorboards. The flickering candlelight seems to pulse in time with the hum, and for a heartbeat the café feels less like a place of study and more like a stage set for an audience that has already taken its seat. The students’ uneasy glances suggest that something beyond the ordinary has taken root in the walls, and the sense of being watched lingers like a whisper in the corners of the mind.",
+                    "summary": "In the university café, a subtle, impossible geometry on the wall and a faint hum hint at an unseen presence, unsettling the students and foreshadowing a deeper mystery."
+                  }
+                }
+              ],
+              "characters": [],
+              "npcs": [],
+              "lore_context": [],
+              "skill_checks": []
+            },
+            "actions": [
+              {
+                "actor_id": "char-e22ec4fa",
+                "controller_owner": "player-7336c490",
+                "speak": "Ah, Wolfgang, hello, over here! I have a seat next to me. Do you want a hot drink?",
+                "act": "gesticulating and waving to Wolfgang",
+                "appearance": "enthusiatic",
+                "emotion": "feeling a strange shiver ",
+                "ooc": "",
+                "meta": {}
+              },
+              {
+                "actor_id": "char-d964fb07",
+                "controller_owner": "player-7336c490",
+                "speak": "Hello, Frederic! Nice to meet you. Thanks, a hot infusion would be great. It's freezing out there",
+                "act": "Walking towards Frederics table.",
+                "appearance": "",
+                "emotion": "",
+                "ooc": "",
+                "meta": {}
+              }
+            ]
+          },
+          "webhookUrl": "http://localhost:5693/webhook/coc_dungeonmaster_v2",
+          "executionMode": "production"
+        }
+      }
+    ]
   },
-  "id": "DungeonMasterMainV2",
-  "tags": []
+  "versionId": "8a5e0514-69e8-4e5a-ab7a-55a805b32c7a",
+  "versionCounter": 57,
+  "triggerCount": 1,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2025-11-29T00:15:34.972Z",
+      "createdAt": "2025-11-29T00:15:34.972Z",
+      "role": "workflow:owner",
+      "workflowId": "srx4qGAUL5iXofDs",
+      "projectId": "X7J9b2uAMgVqH1Lm",
+      "project": {
+        "updatedAt": "2025-11-22T00:10:20.320Z",
+        "createdAt": "2025-11-21T23:52:31.971Z",
+        "id": "X7J9b2uAMgVqH1Lm",
+        "name": "Martin Ulbrich <admin@local.host>",
+        "type": "personal",
+        "icon": null,
+        "description": null
+      }
+    }
+  ]
 }
