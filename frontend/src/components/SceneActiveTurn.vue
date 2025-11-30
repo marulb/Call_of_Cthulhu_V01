@@ -102,12 +102,12 @@
             </div>
             <div class="form-field-row">
               <div class="form-field">
-                <label>Appearance</label>
+                <label>Demeanor</label>
                 <input
                   :value="draft.appearance"
                   @input="updateDraftField(draft, 'appearance', ($event.target as HTMLInputElement).value)"
                   type="text"
-                  placeholder="Body language..."
+                  placeholder="What others see (body language, expression)..."
                 />
               </div>
               <div class="form-field">
@@ -140,7 +140,7 @@
               <strong>Act:</strong> {{ draft.act }}
             </div>
             <div v-if="draft.appearance" class="content-section small">
-              <em>Appearance:</em> {{ draft.appearance }}
+              <em>Demeanor:</em> {{ draft.appearance }}
             </div>
             <div v-if="draft.emotion" class="content-section small">
               <em>Emotion:</em> {{ draft.emotion }}

@@ -343,8 +343,8 @@ Return ONLY a JSON object with these fields (all optional):
 {{
   "speak": "What your character says (dialogue)",
   "act": "What your character does (physical action)",
-  "appearance": "How your character looks/appears",
-  "emotion": "Your character's emotional state",
+  "demeanor": "Observable body language/state - what others SEE (e.g., 'tense shoulders', 'nervous glance', 'forced smile', 'trembling hands'). NOT physical description like age or clothing.",
+  "emotion": "Your character's internal emotional state",
   "ooc": "Out-of-character notes (rarely needed)"
 }}
 
@@ -352,6 +352,7 @@ Example response:
 {{
   "speak": "We should examine that bookshelf more closely.",
   "act": "cautiously approaches the dusty shelves, flashlight in hand",
+  "demeanor": "squinting at the shadows, jaw set with determination",
   "emotion": "curious but wary"
 }}"""
 
@@ -388,10 +389,11 @@ As {character_name}, what do you do? Respond with JSON only:"""
                 action_data = json.loads(cleaned)
 
                 # Validate and return
+                # Map 'demeanor' from LLM response to 'appearance' for frontend compatibility
                 return {
                     "speak": action_data.get("speak", ""),
                     "act": action_data.get("act", ""),
-                    "appearance": action_data.get("appearance", ""),
+                    "appearance": action_data.get("demeanor", action_data.get("appearance", "")),
                     "emotion": action_data.get("emotion", ""),
                     "ooc": action_data.get("ooc", "")
                 }
