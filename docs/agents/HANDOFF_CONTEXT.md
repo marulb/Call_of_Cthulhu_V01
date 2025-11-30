@@ -1,528 +1,138 @@
 # Agent Handoff Context
 
-> **Purpose:** Quick briefing for AI agents to continue work
-> **Last Updated:** 2025-11-29 19:45 UTC
-> **Last Agent:** GitHub Copilot
-> **Session:** Phase 5 - UI/UX Improvements & AI Character Integration
-> **Word Limit:** ~500 words
+> **Last Updated:** 2024-11-30 01:30  
+> **Last Agent:** GitHub Copilot  
+> **Current Phase:** 6 - DungeonMaster Refinement
 
 ---
 
-## Active Task
+## Quick Status
 
-**📋 Current Task:** Phase 5 - UX Improvements & AI Integration
-**Status:** 🟡 P5-1 to P5-4 TODO | ⏸️ P5-5 DEFERRED
-**Document:** `docs/agents/TASK_PHASE5_UX.md`
-
----
-
-## Phase 4 Complete ✅
-
-All Phase 4 milestones completed:
-- M1: Realm/Campaign Settings
-- M2: Campaign Milestones (backend + UI)  
-- M3: Keeper Context Window
-- M4: Scene Summarization
-- M5: Chapter Summarization
-- M6: AI-Controlled Characters
-- M7: NPC Agent System
-- M8/M8b: Frontend Bugs + Markdown
-
-Reports: `docs/agents/reports/REPORT_PHASE4_M6.md`, `REPORT_PHASE4_M7.md`
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Phase 4 (M1-M8) | ✅ Complete | All milestones done |
+| Phase 5 (UX) | ✅ Complete | P5-1 through P5-4 done, P5-5 deferred |
+| AI Action Generation | ✅ Working | But needs context improvements |
+| DungeonMaster | 🔄 Needs Work | Too fast, verbose, missing context |
+| n8n Workflows | ✅ Synced | Just exported from live instance |
 
 ---
 
-## Phase 5 Tasks
+## What Just Happened
 
-| ID | Task | Priority | Status |
-|----|------|----------|--------|
-| P5-1 | Player name case sensitivity | Medium | 🟡 TODO |
-| P5-2 | AI checkbox styling in CharacterSheet | Low | 🟡 TODO |
-| P5-3 | Action ✓/✗ toggle (ready/edit mode) | High | 🟡 TODO |
-| P5-4 | AI Character action generation | High | 🟡 TODO |
-| P5-5 | Automatic character creation | - | ⏸️ DEFERRED |
+### Session 2024-11-30
 
-### P5-3 Details (Action Toggle)
-- Remove "Create Action" / "Cancel" buttons
-- Add ✓ (toggle ready/edit) and ✗ (remove) per action
-- Ready = darker green, non-editable
-- Edit = lighter green, editable
+1. **Fixed AI Action Generation**
+   - Fixed collection names (db.entities for characters, db.scenes for scenes)
+   - Fixed kind filter (characters use "pc", not "character")
+   - Added auto-creation of chapter/scene on game load
+   - Commits: c70389b, 6e4e843, a1d5a1b
 
-### P5-4 Details (AI Actions)
-- Fix: `ai_controlled` not being stored properly
-- Add ⋆˙⟡ button to trigger AI action generation
-- Warn if AI characters have no actions on submit
+2. **Fixed AI Character Storage**
+   - Added ai_controlled and ai_personality to API definitions
+   - Fixed all submit handlers to pass AI fields
+   - Changed AI badge from emoji to subtle star
+   - Commit: 5c51b5d
+
+3. **Exported n8n Workflows**
+   - DungeonMaster_Main.json updated from live instance
+   - LLM_Synthesizer_SubWF.json updated
+   - Commit: 4527c8a
+
+4. **Created DungeonMaster Specification**
+   - docs/specifications/DUNGEONMASTER_AGENT.md
+   - Defines pacing rules, data requirements, behavioral guidelines
+
+5. **Reorganized Task/Report Structure**
+   - Old files moved to docs/agents/archive/
+   - New structure: CURRENT_TASK.md, CURRENT_REPORT.md (overwritten per phase)
+
+---
+
+## Current Task
+
+**File:** docs/agents/CURRENT_TASK.md
+
+5 tasks for DungeonMaster improvements:
+- T1: Fix AI character action context (other characters' actions)
+- T2: Clarify "appearance" field meaning
+- T3: Implement pacing system (turn counting, phase rules)
+- T4: Shorten DM responses (150-300 words target)
+- T5: Enhance character context for DM
+
+**Recommended order:** T2 → T1 → T5 → T4 → T3
+
+---
+
+## Key Files
+
+### Documentation
+- docs/specifications/DUNGEONMASTER_AGENT.md - DM agent spec (NEW)
+- docs/agents/CURRENT_TASK.md - Current work items
+- docs/architecture/ARCHITECTURE_OVERVIEW.md - System design
+
+### Backend (AI/DM)
+- backend/app/routes_ai.py - AI action generation endpoint
+- backend/app/services/llm.py - LLM service, prompts
+- backend/app/routes_turns.py - Turn submission, DM triggering
+
+### Frontend (Relevant)
+- frontend/src/components/SceneActiveTurn.vue - Action drafting UI
+- frontend/src/services/api.ts - API definitions
+
+### n8n Workflows
+- n8n_workflows/DungeonMaster_Main.json - Main DM workflow
+- n8n_workflows/LLM_Synthesizer_SubWF.json - LLM processing
 
 ---
 
 ## Known Issues
 
-### M6: AI-Controlled Characters ✅
-- Added `ai_controlled: bool` and `ai_personality: Optional[str]` to Character model
-- Updated CharacterCreate model to include new fields
-- Modified `routes_characters.py` to handle AI fields in create/update
-- Extended CharacterContext in `context_assembly.py` with AI fields
-- Updated LLM_Synthesizer_SubWF.json:
-  - Added AI character exception to dungeonmaster system prompt
-  - Added "AI-CONTROLLED CHARACTERS" section to user prompt
-  - LLM generates actions/dialogue for AI characters based on personality
-- Frontend UI updates:
-  - Added "AI Controlled" checkbox in CharacterSheetForm
-  - Added "AI Personality" dropdown (7 personality types)
-  - Updated TypeScript Character interface
-  - Fields only visible when AI controlled is checked
+1. **AI actions don't see other characters' turn actions**
+   - existing_actions parameter exists but not used properly
 
-### M7: NPC Agent System ✅
-**Backend Complete | Frontend UI Pending**
-- Added `NPC` model to `models.py` (id, name, description, role, personality, goals, knowledge, location, status)
-- Added `NPCCreate` model for API requests
-- Updated Scene model with `npcs_present: List[str]` field
-- Created `routes_npcs.py` with full CRUD operations:
-  - List/get/create/update/delete NPCs
-  - Add/remove NPCs from scenes
-- Added `NPCContext` to `context_assembly.py`:
-  - Fetches NPCs from scene's `npcs_present` list
-  - Includes in ContextData bundle
-- Updated LLM_Synthesizer_SubWF.json:
-  - Added "NPCS PRESENT IN SCENE" section to user prompt
-  - LLM generates NPC dialogue/actions based on role, personality, goals
-- Frontend TypeScript interface added to `api.ts`
-- Report: `docs/agents/reports/REPORT_PHASE4_M7.md`
+2. **"Appearance" field misinterpreted**
+   - AI thinks it means physical description
+   - Should mean demeanor/body language
 
-**How it works:**
-1. Keeper creates NPCs via API (campaign-scoped)
-2. NPCs are added to scenes when they should appear
-3. During turns, NPCs are included in LLM context
-4. LLM generates NPC actions/dialogue based on personality & goals
+3. **DM pacing too fast**
+   - Horror elements appear turn 1
+   - Should be slow burn (10+ turns before hints)
 
-**Future:** Frontend UI for NPC management panel and scene controls
+4. **DM responses too long**
+   - Currently 500+ words
+   - Target: 150-300 words
+
+5. **DM lacks character knowledge**
+   - Doesn't know character backgrounds
+   - Doesn't acknowledge character expertise
 
 ---
 
-## Known Issues (Remaining Phase 4)
+## Architecture Notes
 
-1. ~~Keeper lacks context~~ ✅ FIXED - Now has realm/campaign/chapter/scene/previous turns
-2. ~~No NPC support~~ ✅ FIXED - M7 complete (backend), frontend UI pending
-3. ~~Frontend bugs~~ ✅ FIXED - All three bugs resolved
-4. **M2-UI** - Optional frontend for campaign settings not implemented
+### Database Collections
+- entities - Characters (kind: "pc"), NPCs (kind: "npc")
+- scenes - Scenes
+- chapters - Chapters
+- campaigns - Campaigns
+- turns - Completed turns
+- action_drafts - In-progress actions
 
-## New Files Created
-
-- `backend/app/services/llm.py` - Direct LLM service for summarization/generation
-- `frontend/src/composables/useMarkdown.ts` - Markdown parser utility
-- `backend/app/routes_npcs.py` - NPC CRUD routes
-- `docs/agents/reports/REPORT_PHASE4_M7.md` - M7 completion report
-
----
-
-## First: Read the Instructions
-
-**Before doing anything, read `/AGENTS.md`** — it contains:
-- Documentation update rules
-- Common commands
-- Code style guidelines
-- Handoff checklist
+### Service Ports
+| Service | Port |
+|---------|------|
+| Frontend | 3093 |
+| Backend | 8093 |
+| MongoDB | 27093 |
+| n8n | 5693 |
+| Qdrant | 6393 |
 
 ---
 
-## What This Project Is
-
-**Call of Cthulhu RPG Campaign Manager** - A web app for running tabletop RPG sessions with AI-powered narrative generation. Players submit actions, an AI "Keeper" generates story responses.
-
-## Current Architecture (3 Layers)
-
-1. **FastAPI Backend** (`backend/app/`)
-   - Owns all entity CRUD (World → Realm → Campaign → Chapter → Scene → Turn)
-   - MongoDB for persistence (Motor async driver)
-   - Socket.IO for real-time player presence
-   - Calls n8n webhooks for AI processing
-
-2. **n8n Workflows** (`n8n_workflows/`)
-   - `DungeonMaster_Main.json` - 6-node workflow (simplified)
-   - `LLM_Synthesizer_SubWF.json` - Builds prompts, calls Ollama
-   - `Prophet_Main.json` - Q&A assistant for rules/lore
-
-3. **Vue Frontend** (`frontend/`) - Has bugs to fix
-
-## The Problem
-
-n8n workflows are doing too much:
-- Complex context assembly (fetching campaign, scene, characters, lore)
-- Business logic (scene/chapter creation decisions)
-- Direct MongoDB writes (bypassing backend)
-- Skill check detection and dice rolling
-
-This creates:
-- State sync issues (backend and n8n both write to MongoDB)
-- No failure recovery (if n8n fails mid-workflow)
-- Hard-to-maintain workflow complexity
-
-## Key Files to Understand
-
-| Priority | File | Why |
-|----------|------|-----|
-| 1 | `routes_turns.py` | The handoff point: backend → n8n |
-| 2 | `DungeonMaster_Main.json` | The complex workflow to simplify |
-| 3 | `models.py` | All entity definitions |
-| 4 | `socketio_manager.py` | Real-time layer |
-
-## Phase 2 Goal
-
-Design a **hybrid architecture** where:
-- Backend owns ALL state changes (MongoDB writes)
-- Backend provides a "context bundle" API for n8n
-- n8n focuses ONLY on LLM orchestration
-- Skill checks, scene creation → backend services
-
-## Friction Points (Top 3)
-
-1. **Dual MongoDB writes** - Both backend and n8n write independently
-2. **Scene/chapter creation in n8n** - Should be backend business logic
-3. **Complex context assembly in n8n** - 7+ nodes doing what one backend endpoint could do
-
-## How to Continue
-
-1. Read `docs/architecture/ARCHITECTURE_OVERVIEW.md` for full details
-2. Read `docs/architecture/FRICTION_POINTS.md` for all identified issues
-3. Phase 2 will produce `docs/architecture/REFACTORING_PLAN.md`
-
-## Commands to Run
-
-```bash
-# Backend
-cd backend && pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-
-# Full stack (Docker)
-docker-compose up
-```
-
-## What Was Completed
-
-### Phase 3 Step 3 REDO: LLM Synthesizer Enhancement ✅ (Just Completed)
-
-Created `LLM_Synthesizer_SubWF_v2.json` with transition detection capability.
-
-**Reason:** Original Step 3 changes were lost/corrupted - file had JSON syntax error
-
-**What Was Created:**
-- ✅ `LLM_Synthesizer_SubWF_v2.json` (173 lines, +66 from original)
-- ✅ Enhanced DungeonMaster system prompt with transition detection rules
-- ✅ Added JSON mode to Ollama call for dungeonmaster agent
-- ✅ Enhanced Extract Answer node to parse structured JSON output
-- ✅ Graceful fallback if JSON parsing fails
-- ✅ Validated with `python3 -m json.tool` - PASSES
-
-**Key Enhancements:**
-1. **Transition Detection Rules:**
-   - NEW SCENE: Location change within building, time skip <1 day, dramatic event
-   - NEW CHAPTER: Major location change, time skip >1 day, story milestone
-   - NO TRANSITION: Same location/timeframe, dialogue, combat in progress
-
-2. **Structured Output:**
-   ```json
-   {
-     "narrative": "...",
-     "summary": "...",
-     "transition": {
-       "type": "scene/chapter/none",
-       "reason": "...",
-       "suggested_name": "...",
-       "suggested_description": "..."
-     },
-     "requires_input": false,
-     "interaction_type": "DISCOVERY"
-   }
-   ```
-
-3. **Backward Compatibility:**
-   - Prophet agent unchanged (simple Q&A format)
-   - Only dungeonmaster agent uses JSON mode
-
-**Report:** `docs/agents/reports/REPORT_PHASE3_STEP3_REDO.md`
-
----
-
-### Phase 3 Step 5: End-to-End Integration Testing ✅ UNBLOCKED
-
-Testing framework created. Ready for manual execution with v2 workflows.
-
-**Status:** Blocker removed - LLM_Synthesizer_SubWF_v2.json created and validated
-
-**What Was Done:**
-- ✅ Code review of backend async implementation (routes_turns.py)
-- ✅ Validation of DungeonMaster_Main_v2.json (valid JSON)
-- ✅ Validation of LLM_Synthesizer_SubWF_v2.json (valid JSON) - FIXED
-- ✅ Created comprehensive testing framework and manual test protocol
-- ✅ Identified implementation gaps and recommendations
-
-**Tests Ready for Execution (manual):**
-- Test 1: Backend mock callback
-- Test 2: n8n workflow import (v2 workflows)
-- Test 3: n8n webhook test
-- Test 4: Full E2E flow
-- Test 5: Scene transition detection
-- Tests 6-8: Optional tests
-
-**Manual Testing Protocol:**
-- 6-phase testing approach (~3.5 hours)
-- Infrastructure validation → Import v2 workflows → Backend testing → E2E testing
-- Complete debug commands and environment checklist
-
-**Implementation Status:**
-- Backend: ✅ Excellent - async callback pattern well-implemented
-- DungeonMaster_Main_v2: ✅ Valid JSON, ready to import
-- LLM_Synthesizer_SubWF_v2: ✅ Valid JSON, ready to import
-
-**Reports:**
-- `docs/agents/reports/REPORT_PHASE3_STEP5.md` (testing framework)
-- `docs/agents/reports/REPORT_PHASE3_STEP3_REDO.md` (blocker resolution)
-
-**Next Action:** Import v2 workflows to n8n, execute manual testing protocol
-
----
-
-### Phase 3 Step 4: DungeonMaster v2 Workflow ✅
-
-Created simplified DungeonMaster Main v2 workflow (82% node reduction).
-
-**File Created:**
-- **DungeonMaster_Main_v2.json** (6 nodes, down from 34)
-  - Webhook: `/coc_dungeonmaster_v2`
-  - Workflow: Receive context bundle → Validate → Prepare LLM input → Call LLM Synthesizer SubWF → Format callback → POST to backend
-  - Async callback pattern (no 60s blocking)
-  - Pure LLM orchestration (no MongoDB writes)
-
-**What Was Removed:**
-- Scene/chapter creation (6 nodes) → Backend TransitionService
-- Turn creation (3 nodes) → Turn exists before n8n called
-- Skill check logic (8 nodes) → Backend SkillCheckService
-- Context assembly (7 nodes) → Backend ContextAssemblyService
-- MongoDB writes (3 nodes) → Backend owns all writes
-- Context preservation (9 nodes) → Not needed with upfront context
-
-**Integration:**
-- Input: Pre-assembled context bundle from backend
-- Output: Callback to `POST /api/v1/internal/turns/{turn_id}/complete`
-- LLM: Uses enhanced LLM Synthesizer from Step 3
-
-**Documentation:**
-- Updated `n8n_workflows/README.md` with v2 description and tests
-- Marked v1 as "Legacy - 34 nodes"
-- Added backend environment variable configuration
-
-**Report:** `docs/agents/reports/REPORT_PHASE3_STEP4.md`
-
----
-
-### Phase 3 Step 3: LLM Synthesizer Enhancement ✅
-
-Enhanced the LLM Synthesizer n8n sub-workflow for transition detection.
-
-**File Modified:**
-- **LLM_Synthesizer_SubWF.json** (~120 lines changed)
-  - Enhanced dungeonmaster system prompt with transition detection rules
-  - Added JSON mode for dungeonmaster agent (`format: 'json'`)
-  - Implemented structured JSON parsing in Extract Answer node
-  - Added graceful fallback for malformed JSON responses
-
-**Transition Detection:**
-- NEW SCENE: Location change within building, time skip < 1 day, dramatic event, discovery
-- NEW CHAPTER: Major location change, time skip > 1 day, story milestone, tone shift
-- NO TRANSITION: Continuing in same location/timeframe, dialogue, combat in progress
-
-**Output Schema (DungeonMaster):**
-```json
-{
-  "narrative": "...",
-  "summary": "...",
-  "transition": {
-    "type": "scene OR chapter OR none",
-    "reason": "...",
-    "suggested_name": "...",
-    "suggested_description": "..."
-  },
-  "requires_input": true/false,
-  "interaction_type": "CHOICE|COMBAT|QUESTION|DISCOVERY|NONE"
-}
-```
-
-**Documentation:**
-- Updated `n8n_workflows/README.md` with schema and test examples
-- Maintained backward compatibility with Prophet agent
-
-**Report:** `docs/agents/reports/REPORT_PHASE3_STEP3.md`
-
----
-
-### Phase 3 Step 2: Backend Endpoints ✅
-
-Modified backend to add async turn processing with callback pattern.
-
-**Files Modified:**
-1. **routes_turns.py** (~400 lines added)
-   - Modified `submit_turn()` endpoint with feature flag routing
-   - Created `submit_turn_async()` - async turn submission (returns 202)
-   - Created `complete_turn_callback()` - n8n callback handler
-   - Created `get_turn_status()` - status polling endpoint
-   - Integrated all three services from Step 1
-   - Fire-and-forget webhook call to n8n
-
-2. **socketio_manager.py** (~70 lines added)
-   - `emit_turn_processing()` - Turn submitted event
-   - `emit_turn_completed()` - Turn done event
-   - `emit_turn_failed()` - Error event
-   - `emit_scene_created()` - New scene event
-   - `emit_chapter_created()` - New chapter event
-
-**New Endpoints:**
-- `POST /api/v1/turns/{turn_id}/submit` - Async submit (202 Accepted)
-- `POST /api/v1/internal/turns/{turn_id}/complete` - n8n callback
-- `GET /api/v1/turns/{turn_id}/status` - Status polling
-
-**Architecture:**
-- Backend returns 202 immediately (no 60s blocking)
-- n8n calls back when LLM processing completes
-- Socket.IO events notify frontend in real-time
-- Feature flag `USE_ASYNC_TURN_PROCESSING` for gradual rollout
-
-**Report:** `docs/agents/reports/REPORT_PHASE3_STEP2.md`
-
----
-
-### Phase 3 Step 1: Backend Services ✅
-
-Created three new backend services in `backend/app/services/`:
-
-1. **context_assembly.py** (487 lines)
-   - `ContextAssemblyService` class with `assemble_context()` method
-   - Pydantic models matching REFACTORING_PLAN.md Section 5 schema
-   - Fetches campaign, chapter, scene, previous turns, characters
-   - Placeholder for Qdrant RAG integration
-   - Size-limited context: max 5 previous turns, 10 characters, 3 lore chunks
-
-2. **skill_check.py** (365 lines)
-   - `SkillCheckService` class with regex-based skill detection
-   - Keyword matching for 30+ Call of Cthulhu 7e skills
-   - CoC 7e dice mechanics: d100 rolls with success levels
-   - Success levels: Critical, Extreme, Hard, Regular, Failure, Fumble
-   - Difficulty detection from action text (Regular, Hard, Extreme)
-
-3. **transition.py** (369 lines)
-   - `TransitionService` class for scene/chapter creation
-   - `parse_transition_from_llm()` - extracts transition from LLM response
-   - `process_transition()` - creates new scenes/chapters
-   - Automated scene closing with summaries
-   - Carries over participants to new scenes
-
-4. **config.py** (58 lines)
-   - Feature flag: `USE_ASYNC_TURN_PROCESSING` (default: False)
-   - Environment-based configuration
-   - Context assembly limits (turns, characters, lore chunks)
-   - Service URLs (n8n webhooks, backend callbacks)
-
-5. **services/__init__.py** (20 lines)
-   - Exports all services and models
-
-**Files Created:**
-- ✅ `backend/app/services/__init__.py`
-- ✅ `backend/app/services/context_assembly.py`
-- ✅ `backend/app/services/skill_check.py`
-- ✅ `backend/app/services/transition.py`
-- ✅ `backend/app/config.py`
-
-**Code Quality:**
-- All services use async/await for MongoDB operations
-- Pydantic models with type hints
-- Comprehensive logging with `logging.getLogger(__name__)`
-- Error handling with meaningful messages
-- Follows existing backend code patterns
-
----
-
-### Phase 2A: Analysis ✅
-- Analyzed all 34 nodes in `DungeonMaster_Main.json`
-- Categorized nodes: 22 MOVE, 7 KEEP, 9 REMOVE
-- Identified 6 critical architectural issues
-- Documented in `REFACTORING_PLAN.md` (Current State section)
-
-### Phase 2B: Design ✅
-- Designed async callback architecture (backend → n8n → backend callback)
-- Defined 3 new backend endpoints (submit, callback, status)
-- Simplified n8n workflow to 5-6 nodes (down from 34)
-- Created context bundle schema (15-30 KB payload)
-- Chose LLM-driven scene/chapter transitions
-- Wrote 8-step migration plan (10-15 dev days)
-- Risk assessment: 8 risks identified, all mitigated
-
-### Phase 2C: Documentation ✅
-- Created `ADR-001-hybrid-architecture.md` with decision rationale
-- Updated `HANDOFF_CONTEXT.md` (this file)
-
-## Key Files Created/Modified
-
-| File | Type | Content |
-|------|------|---------|
-| `docs/architecture/REFACTORING_PLAN.md` | Design | Complete architecture design (Sections 1-8) |
-| `docs/decisions/ADR-001-hybrid-architecture.md` | ADR | Decision record for hybrid architecture |
-| `docs/agents/HANDOFF_CONTEXT.md` | Handoff | Updated with Phase 2 summary |
-
-## Key Design Decisions
-
-1. **Async Callback Pattern:** Backend returns immediately, n8n calls back when done
-2. **Backend Owns ALL Writes:** MongoDB writes ONLY happen in backend
-3. **Backend Assembles Context:** n8n receives pre-assembled context bundle
-4. **LLM-Driven Transitions:** Scene/chapter detection in narrative generation (Option A)
-5. **5-6 Node Workflow:** Simplified n8n to just LLM orchestration
-
-## Architecture Summary
-
-**Before (Current):**
-```
-Frontend → Backend (blocks 60s) → n8n (34 nodes: data fetch, logic, writes, LLM) → Backend → Frontend
-```
-
-**After (Target):**
-```
-Frontend → Backend (returns in 100ms) → n8n (6 nodes: LLM only) → Backend callback → Socket.IO → Frontend
-```
-
-**What Moves to Backend:**
-- Context assembly (campaign, scene, characters, lore)
-- Skill check detection and rolling
-- Scene/chapter creation
-- ALL MongoDB writes
-
-**What Stays in n8n:**
-- LLM narrative generation
-- Transition detection (enhanced prompt)
-- Callback to backend
-
-## Next Steps (Phase 3 - Implementation)
-
-Follow the migration plan in `REFACTORING_PLAN.md` Section 7:
-
-1. **Start Here:** Step 1 - Create backend services
-   - `backend/app/services/context_assembly.py`
-   - `backend/app/services/skill_check.py`
-   - `backend/app/services/transition.py`
-
-2. **Then:** Step 2 - Create new backend endpoints
-   - `POST /api/v1/turns/{turn_id}/submit`
-   - `POST /api/v1/internal/turns/{turn_id}/complete`
-   - Add Socket.IO events
-
-3. **Important:** Use feature flag `USE_ASYNC_TURN_PROCESSING` for gradual rollout
-
-4. **Testing Strategy:** Build new system alongside old, validate with 10% traffic
-
-## Questions Answered
-
-✅ **Is 60-second webhook timeout acceptable?**
-→ No. Moving to async callback pattern (no timeout)
-
-✅ **Should scene creation remain AI-driven?**
-→ Yes. LLM detects transitions during narrative generation
-
-✅ **Where should skill check logic live?**
-→ Backend service (SkillCheckService), with regex/keyword matching initially
+## For Next Agent
+
+1. Read docs/agents/CURRENT_TASK.md for work items
+2. Read docs/specifications/DUNGEONMASTER_AGENT.md for DM requirements
+3. Start with T2 (appearance field clarification) - quick win
+4. When done, update this file and CURRENT_TASK.md
