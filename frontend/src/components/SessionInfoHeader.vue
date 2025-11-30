@@ -24,13 +24,15 @@
       <div class="players-online">
         <span class="online-count">{{ playersOnlineCount }} online</span>
       </div>
+
+      <button @click="emit('openSettings')" class="btn-settings" title="Settings">
+        ⚙
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 const props = defineProps<{
   campaignName: string
   realmName: string
@@ -39,6 +41,10 @@ const props = defineProps<{
   masterPlayerName?: string
   playersOnlineCount: number
   isConnected: boolean
+}>()
+
+const emit = defineEmits<{
+  openSettings: []
 }>()
 </script>
 
@@ -157,5 +163,27 @@ const props = defineProps<{
 
 .online-count {
   font-weight: 500;
+}
+
+.btn-settings {
+  background: none;
+  border: 1px solid var(--vt-c-fog);
+  font-size: 16px;
+  color: var(--vt-c-fog);
+  cursor: pointer;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.btn-settings:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--vt-c-white);
+  border-color: var(--vt-c-white);
 }
 </style>

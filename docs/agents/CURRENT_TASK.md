@@ -1,14 +1,204 @@
-# Current Task: DungeonMaster Agent Improvements
+# Current Task: Web Speech Synthesizer Implementation
 
-> **Phase:** 6 - DungeonMaster Refinement  
+> **Phase:** 7 - TTS / Narration Feature  
 > **Created:** 2024-11-30  
 > **Updated:** 2024-11-30  
-> **Status:** ✅ COMPLETE  
-> **Specification:** `docs/specifications/DUNGEONMASTER_AGENT.md`
+> **Status:** ✅ COMPLETE
 
 ---
 
 ## Summary
+
+Implement client-side Text-to-Speech using the Web Speech API to read Scene Progress narrative aloud. Includes session-level settings modal with voice configuration.
+
+---
+
+## Requirements
+
+1. **Play/Stop button in SceneProgress header**
+   - Position: between "N turns" badge and close (✕) button
+   - Toggle button: shows ▶ (play) or ■ (stop)
+   - Tooltip: "Select text to start reading from that point, or click to read from beginning"
+   - Uses "Google UK English Male" voice (with fallback)
+
+2. **Text selection determines start position**
+   - If user selects text before clicking Play → start reading from selection
+   - If no selection → read from beginning
+   - Stop button cancels speech and resets state
+
+3. **Settings modal (triggered from SessionInfoHeader)**
+   - Gear icon (⚙) in SessionInfoHeader opens modal overlay
+   - Modal contains collapsible/foldable sections for future settings
+   - First section: "Storyteller Voice" (or similar creative name)
+     - Voice dropdown (populated from speechSynthesis.getVoices())
+     - Rate slider (0.5 - 2.0, default 1.0)
+     - Pitch slider (0.5 - 2.0, default 1.0)
+     - Volume slider (0 - 1.0, default 1.0)
+     - Test textarea + play/stop button to preview settings
+
+4. **Persistence**
+   - Voice settings saved to localStorage via Pinia store
+   - Settings restored on page load
+
+---
+
+## Task Breakdown
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| T1 | Create `useSpeechSynthesis` composable | ✅ | Core TTS logic |
+| T2 | Create `settings` Pinia store | ✅ | Persist voice prefs |
+| T3 | Add Play/Stop to `SceneProgress.vue` | ✅ | Header button + tooltip |
+| T4 | Create `SessionSettings.vue` modal | ✅ | Overlay with collapsible sections |
+| T5 | Add gear icon to `SessionInfoHeader.vue` | ✅ | Emit event for modal |
+| T6 | Wire modal in `GameView.vue` | ✅ | State + event handling |
+| T7 | Update `HANDOFF_CONTEXT.md` | ✅ | Document changes |
+
+---
+
+## Implementation Details
+
+### T1: useSpeechSynthesis Composable
+
+**File:** `frontend/src/composables/useSpeechSynthesis.ts`
+
+```typescript
+// Exports:
+// - speak(text: string, startFrom?: number): void
+// - stop(): void
+// - isSpeaking: Ref<boolean>
+// - voices: Ref<SpeechSynthesisVoice[]>
+// - selectedVoice: Ref<string>
+// - rate: Ref<number>
+// - pitch: Ref<number>
+// - volume: Ref<number>
+// - loadVoices(): void
+```
+
+Key features:
+- Lazy voice loading (voices load async in some browsers)
+- Prefer "Google UK English Male", fallback to first English voice
+- Selection-based start: extract text from selection, find offset
+
+### T2: Settings Store
+
+**File:** `frontend/src/stores/settings.ts`
+
+```typescript
+// State:
+// - voiceName: string
+// - rate: number
+// - pitch: number
+// - volume: number
+// Actions:
+// - setVoice(name: string)
+// - setRate/Pitch/Volume(value: number)
+// - loadFromStorage()
+// - saveToStorage()
+```
+
+### T3: SceneProgress Play/Stop Button
+
+**Location:** Between `.turn-count` and `.btn-close` in `.header-actions`
+
+```vue
+<button 
+  @click="toggleSpeech" 
+  class="btn-speech" 
+  :title="speechTooltip"
+>
+  {{ isSpeaking ? '■' : '▶' }}
+</button>
+```
+
+Logic:
+- On click: get current text selection in `.turns-container`
+- If selection exists and is within container, extract start offset
+- Call `speak(fullText, startOffset)` or `stop()`
+
+### T4: SessionSettings Modal
+
+**File:** `frontend/src/components/SessionSettings.vue`
+
+Structure:
+```
+┌─────────────────────────────────────┐
+│ ⚙ Session Settings            ✕    │
+├─────────────────────────────────────┤
+│ ▼ Storyteller Voice                 │
+│   ┌─────────────────────────────┐   │
+│   │ Voice: [Google UK English ▼]│   │
+│   │ Rate:  ────●──────── 1.0    │   │
+│   │ Pitch: ────────●──── 1.2    │   │
+│   │ Volume:──────────●── 0.8    │   │
+│   │                             │   │
+│   │ Test: [___________________] │   │
+│   │        [▶ Play] [■ Stop]    │   │
+│   └─────────────────────────────┘   │
+│                                     │
+│ ▶ Display Options (collapsed)       │
+│ ▶ Notifications (collapsed)         │
+└─────────────────────────────────────┘
+```
+
+### T5: SessionInfoHeader Gear Icon
+
+Add after `.players-online`:
+```vue
+<button @click="emit('openSettings')" class="btn-settings" title="Settings">
+  ⚙
+</button>
+```
+
+### T6: GameView Wiring
+
+```typescript
+const showSettings = ref(false)
+// ... in template:
+// <SessionInfoHeader ... @open-settings="showSettings = true" />
+// <SessionSettings v-if="showSettings" @close="showSettings = false" />
+```
+
+---
+
+## Files to Create/Modify
+
+**Create:**
+- `frontend/src/composables/useSpeechSynthesis.ts`
+- `frontend/src/stores/settings.ts`
+- `frontend/src/components/SessionSettings.vue`
+
+**Modify:**
+- `frontend/src/components/SceneProgress.vue`
+- `frontend/src/components/SessionInfoHeader.vue`
+- `frontend/src/views/GameView.vue`
+
+---
+
+## Success Criteria
+
+- [ ] Play button in SceneProgress reads Keeper's responses aloud
+- [ ] Text selection determines where reading starts
+- [ ] Stop button cancels speech
+- [ ] Gear icon in header opens settings modal
+- [ ] Settings modal has collapsible sections
+- [ ] Voice/rate/pitch/volume configurable in "Storyteller Voice" section
+- [ ] Test area allows previewing voice settings
+- [ ] Settings persist across page reloads
+- [ ] Fallback to any English voice if Google UK English Male unavailable
+
+---
+
+## Browser Compatibility Notes
+
+- Web Speech API supported in Chrome, Edge, Firefox, Safari
+- Voice availability varies by browser/OS
+- Google voices only available in Chrome/Chromium
+- Need graceful fallback for Firefox/Safari users
+
+---
+
+## Previous Phase (6) - COMPLETED
 
 All Phase 6 tasks completed successfully:
 
@@ -19,35 +209,6 @@ All Phase 6 tasks completed successfully:
 | T3: Implement pacing system | ✅ | `e883b60` |
 | T4: Shorten DM responses | ✅ | `b65c3eb` |
 | T5: Enhance character context | ✅ | `aa332d9` |
-
----
-
-## Completed Tasks
-
-### T1: Fix AI Character Action Context ✅
-- Frontend passes `existing_actions` from activeTurnList to AI generation
-- AI now knows what other characters are doing this turn
-
-### T2: Clarify "Appearance" Field ✅
-- Renamed field label to "Demeanor" 
-- Updated placeholder: "Posture, body language, visible emotions..."
-- LLM prompt now explains field meaning clearly
-
-### T3: Implement Pacing System ✅
-- Added `turn_count` and `pacing_phase` to SceneContext
-- Backend counts completed turns per scene
-- Phase detection: establishment (1-5), unease (6-15), investigation (16-35), revelation (36-45), resolution (46+)
-- n8n workflow passes pacing info to LLM
-
-### T4: Shorten DM Responses ✅
-- Added RESPONSE LENGTH section to DM prompt (150-300 words)
-- Added PACING guidance for slow horror buildup
-- Reduced num_predict from 1000 to 600 tokens
-- Updated narrative requirement to "1-3 paragraphs"
-
-### T5: Enhance Character Context ✅
-- Added to CharacterContext: pronoun, birthplace, residence, backstory
-- Fixed collection: db.characters → db.entities (kind: "pc")
 - Added _summarize_backstory() to combine key backstory fields (max 300 chars)
 - n8n workflow now displays all character background info
 

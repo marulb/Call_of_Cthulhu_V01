@@ -4,6 +4,14 @@
       <h3>Scene Progress</h3>
       <div class="header-actions">
         <span class="turn-count">{{ turns.length }} turns</span>
+        <button
+          @click="toggleNarration"
+          class="btn-speech"
+          :class="{ speaking: isSpeaking }"
+          :title="speechTooltip"
+        >
+          {{ isSpeaking ? '■' : '▶' }}
+        </button>
         <button @click="emit('close')" class="btn-close" title="Close">✕</button>
       </div>
     </div>
@@ -63,6 +71,7 @@
 import { computed, ref, watch, nextTick } from 'vue'
 import type { Turn } from '@/types/gameplay'
 import { parseMarkdown } from '@/composables/useMarkdown'
+import { useSpeechSynthesis } from '@/composables/useSpeechSynthesis'
 
 interface Character {
   id: string
@@ -77,6 +86,29 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
 }>()
+
+// Speech synthesis
+const { isSpeaking, toggle, stop, getSelectionOffset, getTextContent } = useSpeechSynthesis()
+
+const speechTooltip = 'Select text to start reading from that point, or click to read from beginning'
+
+function toggleNarration() {
+  if (isSpeaking.value) {
+    stop()
+    return
+  }
+
+  if (!container.value) return
+
+  // Get all text from the turns container
+  const fullText = getTextContent(container.value)
+  if (!fullText) return
+
+  // Check if user has selected text within the container
+  const startOffset = getSelectionOffset(container.value)
+
+  toggle(fullText, startOffset)
+}
 
 const sortedTurns = computed(() => {
   // Chronological order: oldest turns first, newest appended at the bottom
@@ -180,6 +212,31 @@ function formatStatus(status: string) {
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
+}
+
+.btn-speech {
+  background: none;
+  border: 1px solid var(--vt-c-white);
+  font-size: 14px;
+  color: var(--vt-c-white);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-speech:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-speech.speaking {
+  background: var(--vt-c-ink-green-light);
+  border-color: var(--vt-c-ink-green-light);
 }
 
 .btn-close {

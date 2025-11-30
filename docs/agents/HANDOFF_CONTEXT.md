@@ -1,8 +1,8 @@
 # Agent Handoff Context
 
-> **Last Updated:** 2024-11-30 02:30  
+> **Last Updated:** 2024-11-30 14:00  
 > **Last Agent:** GitHub Copilot  
-> **Current Phase:** 6 - DungeonMaster Refinement (COMPLETE)
+> **Current Phase:** 7 - TTS / Narration Feature (COMPLETE)
 
 ---
 
@@ -13,6 +13,7 @@
 | Phase 4 (M1-M8) | ✅ Complete | All milestones done |
 | Phase 5 (UX) | ✅ Complete | P5-1 through P5-4 done, P5-5 deferred |
 | Phase 6 (DM Refinement) | ✅ Complete | All 5 tasks done |
+| Phase 7 (TTS) | ✅ Complete | Web Speech API, settings modal |
 | AI Action Generation | ✅ Working | Knows other characters' actions |
 | DungeonMaster | ✅ Improved | Pacing, word limits, character context |
 | n8n Workflows | ✅ Updated | Pacing info, shorter prompts |
@@ -21,62 +22,77 @@
 
 ## What Just Happened
 
-### Session 2024-11-30 (Phase 6 Complete)
+### Session 2024-11-30 (Phase 7 - TTS Complete)
 
-**All 5 DungeonMaster tasks completed:**
+**Web Speech Synthesizer implementation:**
 
-1. **T2: Appearance → Demeanor** (f12c6e4)
-   - Renamed field label to "Demeanor"
-   - Updated placeholder to clarify body language/pose meaning
-   - LLM prompt explains field purpose
+1. **useSpeechSynthesis composable** (new)
+   - `frontend/src/composables/useSpeechSynthesis.ts`
+   - Play/stop controls with text selection support
+   - Prefers "Google UK English Male" with fallback chain
+   - Integrates with settings store for voice/rate/pitch/volume
 
-2. **T1: Pass Existing Actions** (377e7d9)
-   - Frontend now passes existing_actions from activeTurnList
-   - AI characters know what others are doing this turn
+2. **Settings store** (new)
+   - `frontend/src/stores/settings.ts`
+   - Pinia store persisting TTS preferences to localStorage
+   - Key: `coc_settings`
 
-3. **T5: Enhanced Character Context** (aa332d9)
-   - Added pronoun, birthplace, residence, backstory to CharacterContext
-   - Fixed collection: db.characters → db.entities (kind: pc)
-   - Backend summarizes backstory (300 char max)
+3. **SceneProgress.vue** (modified)
+   - Added ▶/■ play/stop toggle button in header
+   - Position: between turn count badge and close button
+   - Tooltip: "Select text to start reading from that point..."
+   - Reads Keeper's responses aloud from selection or beginning
 
-4. **T4: Shorter DM Responses** (b65c3eb)
-   - Added 150-300 word limit to DM prompt
-   - Added pacing guidance (slow horror buildup)
-   - Reduced num_predict from 1000 to 600 tokens
+4. **SessionSettings.vue** (new)
+   - `frontend/src/components/SessionSettings.vue`
+   - Modal overlay with collapsible sections
+   - "🎭 Storyteller Voice" section with:
+     - Voice dropdown (English voices)
+     - Rate/Pitch/Volume sliders
+     - Test textarea with play/stop preview
+   - Placeholder sections for Display/Notifications
 
-5. **T3: Pacing System** (e883b60)
-   - Added turn_count, pacing_phase to SceneContext
-   - Backend counts completed turns per scene
-   - 5 phases: establishment, unease, investigation, revelation, resolution
-   - n8n workflow passes pacing info to LLM
+5. **SessionInfoHeader.vue** (modified)
+   - Added ⚙ gear icon button
+   - Emits `openSettings` event
 
----
-
-## Key Changes Summary
-
-### Backend
-- `context_assembly.py`: Enhanced CharacterContext + SceneContext with pacing
-- `llm.py`: Demeanor field mapping
-
-### Frontend  
-- `SceneActiveTurn.vue`: Demeanor label, passes existing actions to AI
-
-### Workflows
-- `LLM_Synthesizer_SubWF.json`: 
-  - Shorter response prompts
-  - Character background fields
-  - Pacing phase context
+6. **GameView.vue** (modified)
+   - Imported SessionSettings component
+   - Added `showSettings` state
+   - Wired gear button to open modal
 
 ---
 
-## Next Steps (Suggested)
+## Files Created
 
-1. **Test the improvements** through gameplay:
-   - Verify shorter DM responses
-   - Check pacing phase progression
-   - Confirm AI knows other actions
+| File | Purpose |
+|------|---------|
+| `frontend/src/composables/useSpeechSynthesis.ts` | TTS composable |
+| `frontend/src/stores/settings.ts` | Settings persistence |
+| `frontend/src/components/SessionSettings.vue` | Settings modal |
+| `docs/agents/CURRENT_REPORT.md` | Implementation report |
 
-2. **Monitor pacing** - Watch turn counting work
+## Files Modified
+
+| File | Changes |
+|------|---------|
+| `frontend/src/components/SceneProgress.vue` | Play/stop button + TTS logic |
+| `frontend/src/components/SessionInfoHeader.vue` | Gear icon + emit |
+| `frontend/src/views/GameView.vue` | Import modal + state |
+| `docs/agents/CURRENT_TASK.md` | Phase 7 task list |
+
+---
+
+## Browser Compatibility Notes
+
+- Web Speech API: Chrome, Edge, Firefox, Safari
+- "Google UK English Male" only in Chrome/Chromium
+- Fallback: first en-GB or en-* voice available
+- Settings persist via localStorage
+
+---
+
+## Previous Phase (6) Summary
 
 3. **Phase 7 candidates:**
    - RAG integration for lore context

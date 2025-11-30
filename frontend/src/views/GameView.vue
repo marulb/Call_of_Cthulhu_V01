@@ -4,7 +4,10 @@
     <SessionInfoHeader :campaign-name="sessionStore.selectedCampaign?.name || ''"
       :realm-name="sessionStore.selectedRealm?.name || ''" :session-number="sessionStore.currentSession?.session_number || 1"
       :current-chapter="currentChapter" :master-player-name="masterPlayerName" :players-online-count="socket.playersOnline.value.length"
-      :is-connected="socket.connected.value" />
+      :is-connected="socket.connected.value" @open-settings="showSettings = true" />
+
+    <!-- Session Settings Modal -->
+    <SessionSettings v-if="showSettings" @close="showSettings = false" />
 
     <!-- Main Layout: Game Content + Right Sidebar -->
     <div class="main-layout" :class="`layout-${layoutMode}`">
@@ -84,6 +87,7 @@ import { useSocket } from '@/composables/useSocket'
 import { charactersAPI } from '@/services/api'
 import type { Character } from '@/services/api'
 import SessionInfoHeader from '@/components/SessionInfoHeader.vue'
+import SessionSettings from '@/components/SessionSettings.vue'
 import PlayersList from '@/components/PlayersList.vue'
 import SceneActiveTurn from '@/components/SceneActiveTurn.vue'
 import SceneProgress from '@/components/SceneProgress.vue'
@@ -97,6 +101,9 @@ import type { ActionDraft, Turn, ChatMessage } from '@/types/gameplay'
 const router = useRouter()
 const sessionStore = useGameSessionStore()
 const socket = useSocket()
+
+// Settings Modal
+const showSettings = ref(false)
 
 const actionDrafts = ref<ActionDraft[]>([])
 const turns = ref<Turn[]>([])
