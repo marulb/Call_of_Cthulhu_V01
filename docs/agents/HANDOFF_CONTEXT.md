@@ -1,8 +1,8 @@
 # Agent Handoff Context
 
-> **Last Updated:** 2024-11-30 01:30  
+> **Last Updated:** 2024-11-30 02:30  
 > **Last Agent:** GitHub Copilot  
-> **Current Phase:** 6 - DungeonMaster Refinement
+> **Current Phase:** 6 - DungeonMaster Refinement (COMPLETE)
 
 ---
 
@@ -12,72 +12,96 @@
 |-----------|--------|-------|
 | Phase 4 (M1-M8) | ✅ Complete | All milestones done |
 | Phase 5 (UX) | ✅ Complete | P5-1 through P5-4 done, P5-5 deferred |
-| AI Action Generation | ✅ Working | But needs context improvements |
-| DungeonMaster | 🔄 Needs Work | Too fast, verbose, missing context |
-| n8n Workflows | ✅ Synced | Just exported from live instance |
+| Phase 6 (DM Refinement) | ✅ Complete | All 5 tasks done |
+| AI Action Generation | ✅ Working | Knows other characters' actions |
+| DungeonMaster | ✅ Improved | Pacing, word limits, character context |
+| n8n Workflows | ✅ Updated | Pacing info, shorter prompts |
 
 ---
 
 ## What Just Happened
 
-### Session 2024-11-30
+### Session 2024-11-30 (Phase 6 Complete)
 
-1. **Fixed AI Action Generation**
-   - Fixed collection names (db.entities for characters, db.scenes for scenes)
-   - Fixed kind filter (characters use "pc", not "character")
-   - Added auto-creation of chapter/scene on game load
-   - Commits: c70389b, 6e4e843, a1d5a1b
+**All 5 DungeonMaster tasks completed:**
 
-2. **Fixed AI Character Storage**
-   - Added ai_controlled and ai_personality to API definitions
-   - Fixed all submit handlers to pass AI fields
-   - Changed AI badge from emoji to subtle star
-   - Commit: 5c51b5d
+1. **T2: Appearance → Demeanor** (f12c6e4)
+   - Renamed field label to "Demeanor"
+   - Updated placeholder to clarify body language/pose meaning
+   - LLM prompt explains field purpose
 
-3. **Exported n8n Workflows**
-   - DungeonMaster_Main.json updated from live instance
-   - LLM_Synthesizer_SubWF.json updated
-   - Commit: 4527c8a
+2. **T1: Pass Existing Actions** (377e7d9)
+   - Frontend now passes existing_actions from activeTurnList
+   - AI characters know what others are doing this turn
 
-4. **Created DungeonMaster Specification**
-   - docs/specifications/DUNGEONMASTER_AGENT.md
-   - Defines pacing rules, data requirements, behavioral guidelines
+3. **T5: Enhanced Character Context** (aa332d9)
+   - Added pronoun, birthplace, residence, backstory to CharacterContext
+   - Fixed collection: db.characters → db.entities (kind: pc)
+   - Backend summarizes backstory (300 char max)
 
-5. **Reorganized Task/Report Structure**
-   - Old files moved to docs/agents/archive/
-   - New structure: CURRENT_TASK.md, CURRENT_REPORT.md (overwritten per phase)
+4. **T4: Shorter DM Responses** (b65c3eb)
+   - Added 150-300 word limit to DM prompt
+   - Added pacing guidance (slow horror buildup)
+   - Reduced num_predict from 1000 to 600 tokens
+
+5. **T3: Pacing System** (e883b60)
+   - Added turn_count, pacing_phase to SceneContext
+   - Backend counts completed turns per scene
+   - 5 phases: establishment, unease, investigation, revelation, resolution
+   - n8n workflow passes pacing info to LLM
 
 ---
 
-## Current Task
+## Key Changes Summary
 
-**File:** docs/agents/CURRENT_TASK.md
+### Backend
+- `context_assembly.py`: Enhanced CharacterContext + SceneContext with pacing
+- `llm.py`: Demeanor field mapping
 
-5 tasks for DungeonMaster improvements:
-- T1: Fix AI character action context (other characters' actions)
-- T2: Clarify "appearance" field meaning
-- T3: Implement pacing system (turn counting, phase rules)
-- T4: Shorten DM responses (150-300 words target)
-- T5: Enhance character context for DM
+### Frontend  
+- `SceneActiveTurn.vue`: Demeanor label, passes existing actions to AI
 
-**Recommended order:** T2 → T1 → T5 → T4 → T3
+### Workflows
+- `LLM_Synthesizer_SubWF.json`: 
+  - Shorter response prompts
+  - Character background fields
+  - Pacing phase context
+
+---
+
+## Next Steps (Suggested)
+
+1. **Test the improvements** through gameplay:
+   - Verify shorter DM responses
+   - Check pacing phase progression
+   - Confirm AI knows other actions
+
+2. **Monitor pacing** - Watch turn counting work
+
+3. **Phase 7 candidates:**
+   - RAG integration for lore context
+   - Scene transition automation
+   - NPC dialogue enhancements
 
 ---
 
 ## Key Files
 
 ### Documentation
-- docs/specifications/DUNGEONMASTER_AGENT.md - DM agent spec (NEW)
-- docs/agents/CURRENT_TASK.md - Current work items
+- docs/specifications/DUNGEONMASTER_AGENT.md - DM agent spec
+- docs/agents/CURRENT_TASK.md - Phase 6 tasks (COMPLETE)
 - docs/architecture/ARCHITECTURE_OVERVIEW.md - System design
 
 ### Backend (AI/DM)
-- backend/app/routes_ai.py - AI action generation endpoint
+- backend/app/services/context_assembly.py - Context bundling + pacing
 - backend/app/services/llm.py - LLM service, prompts
 - backend/app/routes_turns.py - Turn submission, DM triggering
 
-### Frontend (Relevant)
+### Frontend
 - frontend/src/components/SceneActiveTurn.vue - Action drafting UI
+
+### n8n Workflows
+- n8n_workflows/LLM_Synthesizer_SubWF.json - DM prompts + pacing
 - frontend/src/services/api.ts - API definitions
 
 ### n8n Workflows

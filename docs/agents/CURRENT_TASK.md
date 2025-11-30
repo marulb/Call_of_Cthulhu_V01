@@ -2,62 +2,86 @@
 
 > **Phase:** 6 - DungeonMaster Refinement  
 > **Created:** 2024-11-30  
-> **Priority:** High  
+> **Updated:** 2024-11-30  
+> **Status:** ✅ COMPLETE  
 > **Specification:** `docs/specifications/DUNGEONMASTER_AGENT.md`
 
 ---
 
-## Context
+## Summary
 
-After testing the AI action generation and DungeonMaster response system, several issues were identified:
+All Phase 6 tasks completed successfully:
 
-1. **AI Turn Generation** doesn't know about other characters' actions in the current turn
-2. **"Appearance" field** is misunderstood by AI (interprets as age/clothing, should be body language/demeanor)
-3. **Story pacing is too fast** - cosmic horror appears in turn 1 instead of slow build
-4. **Scene descriptions too long** - should be 50-70% shorter
-5. **DM lacks character awareness** - doesn't seem to know the characters well
-
----
-
-## Tasks
-
-### T1: Fix AI Character Action Context
-**Priority:** High  
-**Effort:** 2-3 hours
-
-**Problem:** When generating an AI character's action, the LLM doesn't see what other characters are doing this turn.
-
-**Solution:**
-1. Modify `backend/app/routes_ai.py` `generate_ai_character_action()`:
-   - Accept `existing_actions: list` in request (already in schema)
-   - Include these in the LLM prompt as "Other characters this turn are..."
-2. Modify `frontend/src/components/SceneActiveTurn.vue`:
-   - Pass `actionDrafts` to the `generateAIAction` call
-   - Filter to only include ready/submitted actions
-
-**Files:**
-- `backend/app/routes_ai.py`
-- `backend/app/services/llm.py` 
-- `frontend/src/components/SceneActiveTurn.vue`
-- `frontend/src/services/api.ts`
+| Task | Status | Commit |
+|------|--------|--------|
+| T1: Pass existing actions to AI | ✅ | `377e7d9` |
+| T2: Clarify appearance → demeanor | ✅ | `f12c6e4` |
+| T3: Implement pacing system | ✅ | `e883b60` |
+| T4: Shorten DM responses | ✅ | `b65c3eb` |
+| T5: Enhance character context | ✅ | `aa332d9` |
 
 ---
 
-### T2: Clarify "Appearance" Field
-**Priority:** Medium  
-**Effort:** 1-2 hours
+## Completed Tasks
 
-**Problem:** AI interprets "appearance" as physical description (age, hair, clothing).
+### T1: Fix AI Character Action Context ✅
+- Frontend passes `existing_actions` from activeTurnList to AI generation
+- AI now knows what other characters are doing this turn
 
-**Correct meaning:** What others can OBSERVE right now:
-- Body language (tense shoulders, relaxed pose)
-- Micro-expressions (forced smile, furrowed brow)
-- Observable state (sweating, trembling, pale)
-- Presentation choices (standing protectively, leaning in)
+### T2: Clarify "Appearance" Field ✅
+- Renamed field label to "Demeanor" 
+- Updated placeholder: "Posture, body language, visible emotions..."
+- LLM prompt now explains field meaning clearly
 
-**Solution:**
-1. Rename field from `appearance` to `demeanor` or `visible_state`
-2. Update placeholder text to clarify meaning
+### T3: Implement Pacing System ✅
+- Added `turn_count` and `pacing_phase` to SceneContext
+- Backend counts completed turns per scene
+- Phase detection: establishment (1-5), unease (6-15), investigation (16-35), revelation (36-45), resolution (46+)
+- n8n workflow passes pacing info to LLM
+
+### T4: Shorten DM Responses ✅
+- Added RESPONSE LENGTH section to DM prompt (150-300 words)
+- Added PACING guidance for slow horror buildup
+- Reduced num_predict from 1000 to 600 tokens
+- Updated narrative requirement to "1-3 paragraphs"
+
+### T5: Enhance Character Context ✅
+- Added to CharacterContext: pronoun, birthplace, residence, backstory
+- Fixed collection: db.characters → db.entities (kind: "pc")
+- Added _summarize_backstory() to combine key backstory fields (max 300 chars)
+- n8n workflow now displays all character background info
+
+---
+
+## Files Modified
+
+**Backend:**
+- `backend/app/services/context_assembly.py` - CharacterContext + SceneContext enhancements
+- `backend/app/services/llm.py` - Demeanor field handling
+
+**Frontend:**
+- `frontend/src/components/SceneActiveTurn.vue` - Demeanor label + pass existing actions
+
+**Workflows:**
+- `n8n_workflows/LLM_Synthesizer_SubWF.json` - Enhanced prompts + pacing
+
+---
+
+## Next Steps
+
+Phase 6 is complete. Suggested next phase:
+
+1. **Test the improvements** - Play through several turns to verify:
+   - Shorter DM responses
+   - Proper pacing progression
+   - AI characters knowing other actions
+   
+2. **Monitor pacing phases** - Verify turn counting works correctly
+
+3. **Consider Phase 7** - Additional improvements:
+   - RAG integration for lore context
+   - Scene transition automation
+   - NPC dialogue enhancements
 3. Update AI prompts to correctly interpret this field
 
 **Files:**
