@@ -2,7 +2,7 @@
 
 > **Location:** Project root (`AGENTS.md`)  
 > **Purpose:** Universal instructions for all AI coding agents  
-> **Last Updated:** 2024-11-29
+> **Last Updated:** 2024-11-30
 
 ---
 
@@ -10,7 +10,7 @@
 
 **Project:** Call of Cthulhu RPG Campaign Manager  
 **Stack:** FastAPI + MongoDB + n8n + Vue 3 + Ollama LLM  
-**Status:** Active development, preparing for architecture refactor
+**Status:** Active development, Phase 6 - DungeonMaster Refinement
 
 ---
 
@@ -28,14 +28,14 @@
 │   │   └── REFACTORING_PLAN.md        ← Implementation plan
 │   ├── specifications/
 │   │   ├── GAMEPLAY_UI.md             ← Frontend spec
-│   │   └── DATA_MODEL.md              ← MongoDB schema
+│   │   ├── DATA_MODEL.md              ← MongoDB schema
+│   │   └── DUNGEONMASTER_AGENT.md     ← DM agent behavior spec
 │   ├── decisions/
 │   │   └── ADR-*.md                   ← Architecture Decision Records
 │   └── agents/
 │       ├── HANDOFF_CONTEXT.md         ← Quick briefing for agents
-│       ├── TASK_*.md                  ← Current task specifications
-│       └── reports/
-│           └── REPORT_*.md            ← Completion reports per step
+│       ├── CURRENT_TASK.md            ← Active task (overwritten per phase)
+│       └── archive/                   ← Previous task/report files
 ├── backend/app/                 ← FastAPI routes + models
 ├── frontend/src/                ← Vue 3 components
 └── n8n_workflows/               ← Workflow JSON files + README
@@ -47,16 +47,16 @@
 
 **Keep chat responses minimal.** Write detailed output to files:
 
-1. **Task completion** → Write to `docs/agents/reports/REPORT_<PHASE>_<STEP>.md`
+1. **Task completion** → Update `docs/agents/CURRENT_TASK.md` (mark items done)
 2. **Handoff updates** → Write to `docs/agents/HANDOFF_CONTEXT.md`
 3. **Design docs** → Write to `docs/architecture/` or `docs/decisions/`
 
 **Chat response format after completing a task:**
 ```
-✅ <Step Name> Complete
+✅ <Task Name> Complete
 
-Report: docs/agents/reports/REPORT_<X>.md
-Next: docs/agents/TASK_<X>.md
+Updated: docs/agents/CURRENT_TASK.md
+Next: <next task from CURRENT_TASK.md>
 ```
 
 Do NOT paste file contents or long summaries in chat.
