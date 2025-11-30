@@ -288,10 +288,23 @@ async function generateAIAction(draft: ActionDraft) {
   
   generatingActionFor.value = draft.id
   try {
+    // Gather existing actions from other characters (ready or with content)
+    const existingActions = props.drafts
+      .filter(d => d.id !== draft.id && (d.ready || d.speak || d.act))
+      .map(d => ({
+        character_id: d.character_id,
+        character_name: getCharacterName(d.character_id),
+        speak: d.speak,
+        act: d.act,
+        appearance: d.appearance,
+        emotion: d.emotion
+      }))
+    
     const result = await aiAPI.generateAction({
       character_id: draft.character_id,
       scene_id: props.sceneId,
-      session_id: props.sessionId
+      session_id: props.sessionId,
+      existing_actions: existingActions
     })
     
     // Update the draft with generated content
